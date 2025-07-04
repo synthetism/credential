@@ -1,9 +1,9 @@
 /**
  * Universal W3C-compatible Verifiable Credential types
- * 
+ *
  * This module provides the foundational types for verifiable credentials
  * that are compatible with both W3C standards and any extended functionality.
- * 
+ *
  * Key design principles:
  * - Universal compatibility (W3C and beyond)
  * - Type safety and composability
@@ -30,7 +30,7 @@ export interface Holder {
 export interface VerifiableResource {
   ipfsUri: string; // Required
   hash: string; // SHA-256 or multihash
-  
+
   /**
    * Optional content mirrors for redundancy and faster resolution.
    * @use ar://, ipns://, dat://, sia://, don't use web2 if absolutely necessary
@@ -61,14 +61,16 @@ export type CreateCredentialSubject<T> = BaseCredentialSubject & T;
 
 /**
  * W3C-compatible Verifiable Credential interface
- * 
+ *
  * This is the universal interface that serves as both the W3C standard
  * and any extended credential type. By aliasing extended credential types
  * to this interface, we create a dependency moat that works with any
  * W3C-compatible system while maintaining extended functionality.
  */
-export interface W3CVerifiableCredential<S extends BaseCredentialSubject = BaseCredentialSubject> {
-  '@context': string[];
+export interface W3CVerifiableCredential<
+  S extends BaseCredentialSubject = BaseCredentialSubject,
+> {
+  "@context": string[];
   id: string;
   type: string[];
   issuer: { id: string };
@@ -124,13 +126,14 @@ export interface DeclarationSubject extends BaseCredentialSubject {
 // Base credential types - extensible string types for client implementations
 export const BaseCredentialType = {
   Identity: "IdentityCredential",
-  Authorization: "AuthorizationCredential", 
+  Authorization: "AuthorizationCredential",
   Asset: "AssetCredential",
   Governance: "GovernanceCredential",
   Declaration: "DeclarationCredential",
 } as const;
 
-export type BaseCredentialTypeValues = typeof BaseCredentialType[keyof typeof BaseCredentialType];
+export type BaseCredentialTypeValues =
+  (typeof BaseCredentialType)[keyof typeof BaseCredentialType];
 
 // Intelligence classification - universal concept
 export enum Intelligence {
@@ -147,7 +150,7 @@ export interface CredentialIssueOptions {
   context?: string[];
   issuanceDate?: string;
   expirationDate?: string;
-  proofFormat?: 'jwt' | 'jsonld';
+  proofFormat?: "jwt" | "jsonld";
   meta?: {
     version?: string;
     schema?: string;
@@ -164,7 +167,9 @@ export interface CredentialVerifyOptions {
 }
 
 // Storage interface for credential persistence
-export interface CredentialStorage<T extends W3CVerifiableCredential = W3CVerifiableCredential> {
+export interface CredentialStorage<
+  T extends W3CVerifiableCredential = W3CVerifiableCredential,
+> {
   save(credential: T): Promise<void>;
   load(id: string): Promise<T | null>;
   delete(id: string): Promise<void>;
