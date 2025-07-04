@@ -177,14 +177,6 @@ export interface CredentialStorage<
   search(query: Record<string, unknown>): Promise<T[]>;
 }
 
-// Key management interface for signing/verification
-export interface KeyManager {
-  sign(data: string, keyId: string): Promise<string>;
-  verify(data: string, signature: string, publicKey: string): Promise<boolean>;
-  getPublicKey(keyId: string): Promise<string>;
-  createKey(type?: string): Promise<{ keyId: string; publicKey: string }>;
-}
-
 // Result types for error handling
 export interface CredentialResult<T> {
   success: boolean;

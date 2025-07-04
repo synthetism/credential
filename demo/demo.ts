@@ -7,15 +7,15 @@
  * including issuing, verifying, and storing credentials.
  */
 
-import { CredentialService, CredentialUtils } from './src/credential-service';
-import { JSONCredentialStorageAdapter } from './test/storage-adapter';
+import { CredentialService, CredentialUtils } from '../src/credential';
+import { JSONCredentialStorageAdapter } from '../test/storage-adapter';
 import type {
   W3CVerifiableCredential,
   IdentitySubject,
   AuthorizationSubject,
   DataAssetSubject,
   SynetCredentialType,
-} from './src/types-synet';
+} from '../src/types-synet';
 
 async function main() {
   console.log('🚀 @synet/credential Demonstration\n');

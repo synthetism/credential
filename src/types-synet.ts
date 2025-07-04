@@ -28,7 +28,6 @@ import type {
   CredentialIssueOptions,
   CredentialVerifyOptions,
   CredentialStorage,
-  KeyManager,
   CredentialResult,
   VerificationResult,
 } from "./types-base";
@@ -212,7 +211,6 @@ export type {
   CredentialIssueOptions,
   CredentialVerifyOptions,
   CredentialStorage,
-  KeyManager,
   CredentialResult,
   VerificationResult,
 } from "./types-base";
