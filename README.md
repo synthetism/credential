@@ -1,6 +1,23 @@
 # @synet/credential
 
-A universal, dependency-moat library for issuing and verifying W3C-compatible verifiable credentials (VCs). Built with composability, extensibility, and minimalism in mind.
+```bash
+   _____                  _                        
+  / ____|                | |                       
+ | (___  _   _ _ __   ___| |_                      
+  \___ \| | | | '_ \ / _ \ __|                     
+  ____) | |_| | | | |  __/ |_                      
+ |_____/ \__, |_| |_|\___|\__|                     
+          __/ |                                    
+     ____|___/          _            _   _       _ 
+    / ____|            | |          | | (_)     | |
+   | |     _ __ ___  __| | ___ _ __ | |_ _  __ _| |
+   | |    | '__/ _ \/ _` |/ _ \ '_ \| __| |/ _` | |
+   | |____| | |  __/ (_| |  __/ | | | |_| | (_| | |
+    \_____|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_|
+                                                   
+version: 1.0.0      
+```
+A universal library for issuing and verifying W3C-compatible verifiable credentials (VCs). Built with composability, extensibility, and minimalism in mind.
 
 ## Features
 
@@ -15,8 +32,6 @@ A universal, dependency-moat library for issuing and verifying W3C-compatible ve
 
 ## Architecture
 
-This library uses a **split architecture** that provides maximum flexibility:
-
 ### 1. **Base Types** (`types-base.ts`)
 Universal, stable, reusable types that work with any W3C-compatible system:
 - `IdentitySubject`, `AuthorizationSubject`, `AssetSubject`
@@ -24,12 +39,10 @@ Universal, stable, reusable types that work with any W3C-compatible system:
 - `BaseCredentialType` enum
 - `Intelligence` classification
 
-### 2. **Synet Types** (`types-synet.ts`)
-Synet-specific extensions that demonstrate the extension pattern:
-- `IpAssetSubject`, `IpPoolAssetSubject` (networking-specific)
-- `GatewayIdentitySubject`, `RootIdentitySubject` (Synet roles)
-- `SynetCredentialType` enum (extended credential types)
-- Includes re-exports of all base types
+## 2. **Extendable W3C Credentials**
+
+You can extend W3C Verifiable Credentials and create custom Subject or extend BaseSubject, while maintaining full compatibility, without breaking change ever happen. 
+
 
 ### 3. **Benefits**
 - **Universality**: Base types work with any system
@@ -215,27 +228,26 @@ The library supports various credential types out of the box:
 ### Identity Credentials
 
 - `IdentityCredential`: Basic identity assertion
-- `RootIdentityCredential`: Root authority identity
-- `GatewayIdentityCredential`: Gateway node identity
+
 
 ### Authorization Credentials
 
 - `AuthorizationCredential`: General authorization
-- `GatewayAuthorizationCredential`: Gateway authorization
-- `IntelligenceAuthorizationCredential`: AI/Intelligence authorization
 
 ### Asset Credentials
 
-- `DataAssetCredential`: Data asset ownership/licensing
-- `IpAssetCredential`: IP address assignment
-- `IpPoolAssetCredential`: IP pool management
+- `AssetCredential`: Base Asset Credential
 
 ### Governance Credentials
 
-- `PolicyCredential`: Policy declaration
-- `NetworkDeclarationCredential`: Network governance
+- `PolicyCredential`: Base Policy declaration
 
-## Custom Credential Types
+### Declaration Credentials
+
+- `DeclarationCredential`: Base Policy declaration
+
+
+## Custom Credential Subject Types
 
 You can easily create custom credential types:
 
@@ -284,7 +296,10 @@ export const BaseCredentialType = {
   Asset: "DataAssetCredential",
 } as const;
 
-// 2. Synet Extensions (types-synet.ts)
+/** 
+ * 2. Your specific extensions @see types-synet.ts
+*/
+
 export interface IpAssetSubject extends BaseCredentialSubject {
   networkId: string;
   ip: string;
@@ -308,7 +323,7 @@ export * from './credential-service';
 
 - **Universal Compatibility**: Base types work with any W3C system
 - **Stable Foundation**: Core types remain unchanged across versions
-- **Easy Extension**: Add new types without breaking existing code
+- **Easy Extension**: Add new custom types without breaking existing code 
 - **Single Dependency**: One library for everything
 - **Type Safety**: Full TypeScript support throughout
 
@@ -386,12 +401,6 @@ Currently supports:
 - **JWT Proof**: Industry-standard JWT-based proofs (default)
 - **Extensible**: Easy to add new proof formats
 
-## Storage Backends
-
-- **JSON File Storage**: Simple file-based storage for development
-- **Memory Storage**: In-memory storage for testing
-- **Custom Storage**: Implement the `CredentialStorage` interface
-
 ## Validation and Utilities
 
 ```typescript
@@ -440,8 +449,7 @@ if (result.success) {
 
 ## Production Considerations
 
-1. **Key Management**: Use a secure key management system (HSM, cloud KMS, etc.)
-2. **Storage**: Use a production-grade database for credential storage
+1. **Key Management**: Use a secure key management system (HSM, cloud KMS, etc.), @synet/vault, @synet/secrets or @synet/storage offer many ways how and where to store your credentials.
 3. **Validation**: Implement additional validation layers for your use case
 4. **Monitoring**: Add logging and monitoring for credential operations
 
