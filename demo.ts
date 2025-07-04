@@ -14,7 +14,8 @@ import type {
   IdentitySubject,
   AuthorizationSubject,
   DataAssetSubject,
-} from './src/types';
+  SynetCredentialType,
+} from './src/types-synet';
 
 async function main() {
   console.log('🚀 @synet/credential Demonstration\n');

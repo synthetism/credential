@@ -2,13 +2,13 @@
  * Universal W3C-compatible Verifiable Credential types
  * 
  * This module provides the foundational types for verifiable credentials
- * that are compatible with both W3C standards and Synet's extended functionality.
+ * that are compatible with both W3C standards and any extended functionality.
  * 
  * Key design principles:
- * - Universal compatibility (W3C and Synet)
+ * - Universal compatibility (W3C and beyond)
  * - Type safety and composability
  * - Minimal dependencies
- * - Extensible for future needs
+ * - Extensible base classes for client implementations
  */
 
 export interface ProofType {
@@ -19,11 +19,6 @@ export interface ProofType {
   proofPurpose?: string;
   jwt?: string; // JWT proof format
   [x: string]: unknown;
-}
-
-export interface BaseCredentialSubject {
-  holder: Holder;
-  [key: string]: unknown;
 }
 
 export interface Holder {
@@ -54,13 +49,23 @@ export interface CredentialDelegation {
   [key: string]: unknown; // Additional properties can be added as needed
 }
 
+export interface BaseCredentialSubject {
+  holder: Holder;
+  [key: string]: unknown;
+}
+
+/**
+ * Create a new credential subject type by extending the base credential subject with custom properties
+ */
+export type CreateCredentialSubject<T> = BaseCredentialSubject & T;
+
 /**
  * W3C-compatible Verifiable Credential interface
  * 
  * This is the universal interface that serves as both the W3C standard
- * and Synet's extended credential type. By aliasing SynetVerifiableCredential
+ * and any extended credential type. By aliasing extended credential types
  * to this interface, we create a dependency moat that works with any
- * W3C-compatible system while maintaining Synet's extended functionality.
+ * W3C-compatible system while maintaining extended functionality.
  */
 export interface W3CVerifiableCredential<S extends BaseCredentialSubject = BaseCredentialSubject> {
   '@context': string[];
@@ -78,36 +83,11 @@ export interface W3CVerifiableCredential<S extends BaseCredentialSubject = BaseC
   };
 }
 
-/**
- * Synet-specific credential alias
- * 
- * This creates the dependency moat by aliasing SynetVerifiableCredential
- * to W3CVerifiableCredential, ensuring maximum compatibility while
- * maintaining Synet's identity.
- */
-export type SynetVerifiableCredential<S extends BaseCredentialSubject = BaseCredentialSubject> = 
-  W3CVerifiableCredential<S>;
-
-// Extended credential subject types for Synet ecosystem
+// Base credential subject types - stable, reusable, highly extensible
 
 export interface IdentitySubject extends BaseCredentialSubject {
   issuedBy: Holder;
   scope?: string[]; // optional: claim purpose or restriction
-}
-
-export interface RootIdentitySubject extends IdentitySubject {
-  networkId: string;
-  poolCidr: string; // The IP range operated by root
-  url?: string; // Optional URL for more info
-}
-
-export interface GatewayIdentitySubject extends IdentitySubject {
-  networkId: string;
-  regionId?: string;
-  cidr?: string;
-  ip?: string;
-  ipPoolId?: string;
-  publicKeyHex?: string; // optional, for rotation
 }
 
 export interface AuthorizationSubject extends BaseCredentialSubject {
@@ -118,7 +98,7 @@ export interface AuthorizationSubject extends BaseCredentialSubject {
   verifiableResource?: VerifiableResource;
 }
 
-export interface BaseAssetSubject extends BaseCredentialSubject {
+export interface AssetSubject extends BaseCredentialSubject {
   issuedBy: Holder;
   delegated?: CredentialDelegation;
   parentAssetId?: string;
@@ -127,80 +107,32 @@ export interface BaseAssetSubject extends BaseCredentialSubject {
   verifiableResource?: VerifiableResource;
 }
 
-export interface DataAssetSubject extends BaseAssetSubject {
-  licensedBy?: Holder;
-  scope?: string[]; // Purpose of the data (e.g. "analytics", "storage", "training")
-}
-
-export interface IpAssetSubject extends BaseAssetSubject {
-  networkId: string;
-  ip: string;
-}
-
-export interface IpPoolAssetSubject extends BaseAssetSubject {
-  networkId: string;
-  cidr: string;
-  regionId?: string; // Enforcing region for the IP pool
-}
-
-export interface BaseGovernanceSubject extends BaseCredentialSubject {
+export interface GovernanceSubject extends BaseCredentialSubject {
   issuedBy: Holder; // Who issued the governance credential
   metadata?: Record<string, unknown>;
   schemaUri?: string;
   verifiableResource?: VerifiableResource;
 }
 
-export interface PolicySubject extends BaseGovernanceSubject {
-  issuedBy: Holder;
+export interface DeclarationSubject extends BaseCredentialSubject {
+  issuedBy: Holder; // Who issued the declaration
+  metadata?: Record<string, unknown>;
+  schemaUri?: string;
+  verifiableResource?: VerifiableResource;
 }
 
-export interface RootPolicySubject extends BaseGovernanceSubject {
-  networkId: string;
-  policyId: string;
-  version: string;
-}
+// Base credential types - extensible string types for client implementations
+export const BaseCredentialType = {
+  Identity: "IdentityCredential",
+  Authorization: "AuthorizationCredential", 
+  Asset: "AssetCredential",
+  Governance: "GovernanceCredential",
+  Declaration: "DeclarationCredential",
+} as const;
 
-export interface NetworkDeclarationSubject extends BaseGovernanceSubject {
-  networkId: string;
-  policyId: string;
-  ipv4?: string;
-  ipv6?: string;
-  cidr?: string;
-  networkType?: string;
-  topology?: string;
-  rootUrl?: string;
-}
+export type BaseCredentialTypeValues = typeof BaseCredentialType[keyof typeof BaseCredentialType];
 
-export interface RoutingSubject extends BaseCredentialSubject {
-  ip: string; // Synet IP
-  publicKey: string; // WireGuard public key
-  endpoint: string; // IP:port (or gateway relay ID)
-  networkId: string;
-  issuedBy: Holder; // A trusted gateway or root
-}
-
-// Credential type enums for type safety
-export enum CredentialType {
-  // Identity
-  Identity = "IdentityCredential",
-  RootIdentity = "RootIdentityCredential",
-  GatewayIdentity = "GatewayIdentityCredential",
-
-  // Authorization
-  Authorization = "AuthorizationCredential",
-  GatewayAuthorization = "GatewayAuthorizationCredential",
-  IntelligenceAuthorization = "IntelligenceAuthorizationCredential",
-
-  // Assets
-  DataAsset = "DataAssetCredential",
-  IpPool = "IpPoolAssetCredential",
-  Ip = "IpAssetCredential",
-
-  // Governance
-  RootPolicy = "RootPolicyCredential",
-  NetworkDeclaration = "NetworkDeclarationCredential",
-}
-
+// Intelligence classification - universal concept
 export enum Intelligence {
   human = "Human",
   ai = "AI",

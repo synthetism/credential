@@ -5,6 +5,7 @@ A universal, dependency-moat library for issuing and verifying W3C-compatible ve
 ## Features
 
 - ✅ **Universal W3C Compatibility**: Works with any W3C-compatible credential system
+- ✅ **Split Architecture**: Clean separation between universal base types and Synet-specific extensions
 - ✅ **Type Safety**: Full TypeScript support with comprehensive type definitions
 - ✅ **Minimal Dependencies**: Only depends on battle-tested libraries
 - ✅ **Extensible**: Easy to extend for custom credential types and proof formats
@@ -12,10 +13,89 @@ A universal, dependency-moat library for issuing and verifying W3C-compatible ve
 - ✅ **JWT Proof Support**: Industry-standard JWT proof format
 - ✅ **Testing Ready**: Comprehensive test suite and utilities
 
+## Architecture
+
+This library uses a **split architecture** that provides maximum flexibility:
+
+### 1. **Base Types** (`types-base.ts`)
+Universal, stable, reusable types that work with any W3C-compatible system:
+- `IdentitySubject`, `AuthorizationSubject`, `AssetSubject`
+- `GovernanceSubject`, `DeclarationSubject`
+- `BaseCredentialType` enum
+- `Intelligence` classification
+
+### 2. **Synet Types** (`types-synet.ts`)
+Synet-specific extensions that demonstrate the extension pattern:
+- `IpAssetSubject`, `IpPoolAssetSubject` (networking-specific)
+- `GatewayIdentitySubject`, `RootIdentitySubject` (Synet roles)
+- `SynetCredentialType` enum (extended credential types)
+- Includes re-exports of all base types
+
+### 3. **Benefits**
+- **Universality**: Base types work with any system
+- **Stability**: Core types remain stable across updates
+- **Extensibility**: Easy to add new credential types
+- **Synet Innovation**: Concrete implementations for Synet ecosystem
+- **Single Dependency**: One library for everything
+
 ## Installation
 
 ```bash
 npm install @synet/credential
+```
+
+## Usage Options
+
+### Option 1: Universal (Base Types Only)
+```typescript
+import { 
+  W3CVerifiableCredential, 
+  IdentitySubject, 
+  BaseCredentialType 
+} from '@synet/credential/types-base';
+
+// Use stable, universal types
+const credential: W3CVerifiableCredential<IdentitySubject> = {
+  // ... W3C-compatible credential
+};
+```
+
+### Option 2: Synet Ecosystem (Recommended)
+```typescript
+import { 
+  SynetVerifiableCredential, 
+  IpAssetSubject, 
+  SynetCredentialType 
+} from '@synet/credential';
+
+// Use Synet-specific types + all base types
+const ipCredential: SynetVerifiableCredential<IpAssetSubject> = {
+  credentialSubject: {
+    holder: { id: 'did:key:holder123' },
+    issuedBy: { id: 'did:key:issuer123' },
+    networkId: 'synet-main',
+    ip: '10.0.0.1',
+  },
+  // ... other W3C properties
+};
+```
+
+### Option 3: Custom Extension
+```typescript
+import { 
+  BaseCredentialSubject, 
+  W3CVerifiableCredential 
+} from '@synet/credential/types-base';
+
+// Extend base types for your needs
+interface MyCustomSubject extends BaseCredentialSubject {
+  customField: string;
+  myData: Record<string, unknown>;
+}
+
+const MyCredentialTypes = {
+  Custom: "MyCustomCredential",
+} as const;
 ```
 
 ## Quick Start
@@ -180,6 +260,58 @@ const customCredential = await credentialService.issueVC<CustomSubject>(
   'CustomCredential'
 );
 ```
+
+## Extending with Custom Types
+
+The library is designed to be easily extensible. You can add your own credential types while maintaining full compatibility with the existing system:
+
+```typescript
+// 1. Define your custom credential types
+const CustomCredentialTypes = {
+  Degree: "DegreeCredential",
+  Certificate: "CertificateCredential",
+  License: "LicenseCredential",
+  DeviceIdentity: "DeviceIdentityCredential",
+} as const;
+
+type CustomCredentialType = typeof CustomCredentialTypes[keyof typeof CustomCredentialTypes];
+
+// 2. Create union type with Synet types
+type MyCredentialType = SynetCredentialType | CustomCredentialType;
+
+// 3. Define custom credential subjects
+interface DegreeSubject extends BaseCredentialSubject {
+  degree: string;
+  major: string;
+  university: string;
+  graduationDate: string;
+  gpa?: number;
+}
+
+// 4. Use with the credential service
+const degreeSubject: DegreeSubject = {
+  holder: { id: 'did:key:student123', name: 'Jane Doe' },
+  degree: 'Bachelor of Science',
+  major: 'Computer Science',
+  university: 'Tech University',
+  graduationDate: '2023-05-15',
+  gpa: 3.8,
+};
+
+const credential = await credentialService.issueVC(
+  degreeSubject,
+  CustomCredentialTypes.Degree,
+  issuerDid
+);
+```
+
+This approach allows you to:
+- Add new credential types without modifying the core library
+- Maintain type safety across your entire application
+- Mix custom types with built-in Synet types
+- Extend intelligence classifications similarly
+
+See `extension-example.ts` for a complete working example.
 
 ## Key Management
 

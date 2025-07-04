@@ -8,7 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import { CredentialService, CredentialUtils } from '../src/credential-service';
 import { JSONCredentialStorage } from '../src/storage';
-import type { W3CVerifiableCredential, IdentitySubject } from '../src/types';
+import type { W3CVerifiableCredential, IdentitySubject } from '../src/types-synet';
 
 // Sample credential from example-storages/vcstore.json
 const exampleCredential: W3CVerifiableCredential<IdentitySubject> = {

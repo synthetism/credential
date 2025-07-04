@@ -13,7 +13,7 @@ import type {
   IdentitySubject, 
   BaseCredentialSubject,
   KeyManager 
-} from '../src/types';
+} from '../src/types-synet';
 
 describe('CredentialService', () => {
   let credentialService: CredentialService;
