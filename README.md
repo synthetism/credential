@@ -133,21 +133,25 @@ import type {
 The library supports various credential types out of the box:
 
 ### Identity Credentials
+
 - `IdentityCredential`: Basic identity assertion
 - `RootIdentityCredential`: Root authority identity
 - `GatewayIdentityCredential`: Gateway node identity
 
 ### Authorization Credentials
+
 - `AuthorizationCredential`: General authorization
 - `GatewayAuthorizationCredential`: Gateway authorization
 - `IntelligenceAuthorizationCredential`: AI/Intelligence authorization
 
 ### Asset Credentials
+
 - `DataAssetCredential`: Data asset ownership/licensing
 - `IpAssetCredential`: IP address assignment
 - `IpPoolAssetCredential`: IP pool management
 
 ### Governance Credentials
+
 - `PolicyCredential`: Policy declaration
 - `NetworkDeclarationCredential`: Network governance
 
@@ -193,6 +197,7 @@ interface KeyManager {
 ## Proof Formats
 
 Currently supports:
+
 - **JWT Proof**: Industry-standard JWT-based proofs (default)
 - **Extensible**: Easy to add new proof formats
 
@@ -285,9 +290,5 @@ npm run format
 ## License
 
 MIT License - see LICENSE file for details.
-
-## Philosophy
-
-This library embodies the "dependency moat" principle - by providing a universal, W3C-compatible interface, it creates a protective barrier that allows systems to evolve independently while maintaining compatibility. The `SynetVerifiableCredential` is aliased to `W3CVerifiableCredential`, ensuring maximum compatibility while preserving the ability to extend functionality.
 
 Built with ❤️ by the Synet Team for a decentralized future.
