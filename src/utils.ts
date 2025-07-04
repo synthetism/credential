@@ -25,7 +25,7 @@ export function createId(length = 24): string {
   const hash = createHash('sha3-512').update(input).digest('hex');
   
   // Convert to base36 and take required length
-  const hashBigInt = BigInt('0x' + hash);
+  const hashBigInt = BigInt(`0x${hash}`);
   const base36Hash = hashBigInt.toString(36);
   
   // Combine first letter with hash, ensuring we get the right length
