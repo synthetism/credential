@@ -8,7 +8,7 @@
  */
 
 import { CredentialService, CredentialUtils } from './src/credential-service';
-import { JSONCredentialStorage } from './src/storage';
+import { JSONCredentialStorageAdapter } from './test/storage-adapter';
 import type {
   W3CVerifiableCredential,
   IdentitySubject,
@@ -30,7 +30,7 @@ async function main() {
   console.log(`   Key ID: ${keyId}`);
   
   const credentialService = new CredentialService(keyManager, issuerDid, keyId);
-  const storage = new JSONCredentialStorage('./demo-credentials.json');
+  const storage = new JSONCredentialStorageAdapter('./demo-credentials.json');
 
   // Issue an Identity Credential
   console.log('\n2. Issuing Identity Credential...');

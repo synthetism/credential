@@ -7,7 +7,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { CredentialService, CredentialUtils } from '../src/credential-service';
-import { JSONCredentialStorage, MemoryCredentialStorage } from '../src/storage';
+import { MemoryCredentialStorageAdapter } from './storage-adapter';
 import type { 
   W3CVerifiableCredential, 
   IdentitySubject, 
@@ -18,7 +18,7 @@ import type {
 describe('CredentialService', () => {
   let credentialService: CredentialService;
   let keyManager: KeyManager;
-  let storage: MemoryCredentialStorage;
+  let storage: MemoryCredentialStorageAdapter;
   let issuerDid: string;
   let keyId: string;
 
@@ -35,7 +35,7 @@ describe('CredentialService', () => {
     credentialService = new CredentialService(keyManager, issuerDid, keyId);
     
     // Create storage
-    storage = new MemoryCredentialStorage();
+    storage = new MemoryCredentialStorageAdapter();
   });
 
   describe('Credential Generation', () => {
@@ -302,11 +302,11 @@ describe('CredentialService', () => {
 });
 
 describe('Storage', () => {
-  let storage: MemoryCredentialStorage;
+  let storage: MemoryCredentialStorageAdapter;
   let credential: W3CVerifiableCredential;
 
   beforeEach(() => {
-    storage = new MemoryCredentialStorage();
+    storage = new MemoryCredentialStorageAdapter();
     credential = {
       '@context': ['https://www.w3.org/2018/credentials/v1'],
       id: 'test-credential-id',
@@ -391,7 +391,7 @@ describe('Integration Test', () => {
     const keyId = keyResult.keyId;
     const issuerDid = `did:key:${keyResult.publicKey}`;
     const credentialService = new CredentialService(keyManager, issuerDid, keyId);
-    const storage = new MemoryCredentialStorage();
+    const storage = new MemoryCredentialStorageAdapter();
 
     // Issue a credential
     const subject: IdentitySubject = {

@@ -17,7 +17,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import type { W3CVerifiableCredential, BaseCredentialSubject, CredentialStorage } from './types';
+import type { W3CVerifiableCredential, BaseCredentialSubject, CredentialStorage } from '../src/types-base';
 
 /**
  * JSON file-based credential storage

@@ -261,6 +261,59 @@ const customCredential = await credentialService.issueVC<CustomSubject>(
 );
 ```
 
+## Extending W3C Credentials
+
+This library demonstrates how to extend W3C Verifiable Credentials while maintaining full compatibility. Here's how we achieved universal extensibility:
+
+### Split Architecture Pattern
+
+```typescript
+// 1. Universal Base Types (types-base.ts)
+export interface BaseCredentialSubject {
+  holder: { id: string; name?: string };
+  issuedBy?: { id: string; name?: string };
+}
+
+export interface IdentitySubject extends BaseCredentialSubject {
+  // Universal identity properties
+}
+
+export const BaseCredentialType = {
+  Identity: "IdentityCredential",
+  Authorization: "AuthorizationCredential",
+  Asset: "DataAssetCredential",
+} as const;
+
+// 2. Synet Extensions (types-synet.ts)
+export interface IpAssetSubject extends BaseCredentialSubject {
+  networkId: string;
+  ip: string;
+  subnet?: string;
+  gateway?: string;
+}
+
+export const SynetCredentialType = {
+  ...BaseCredentialType,  // Re-export base types
+  IpAsset: "IpAssetCredential",
+  GatewayIdentity: "GatewayIdentityCredential",
+} as const;
+
+// 3. Single Export Point (index.ts)
+export * from './types-base';      // Universal types
+export * from './types-synet';     // Synet-specific + base types
+export * from './credential-service';
+```
+
+### Key Benefits
+
+- **Universal Compatibility**: Base types work with any W3C system
+- **Stable Foundation**: Core types remain unchanged across versions
+- **Easy Extension**: Add new types without breaking existing code
+- **Single Dependency**: One library for everything
+- **Type Safety**: Full TypeScript support throughout
+
+This pattern allows you to either use the universal base types or the extended Synet types, while maintaining complete W3C compatibility and enabling easy extension for your own use cases.
+
 ## Extending with Custom Types
 
 The library is designed to be easily extensible. You can add your own credential types while maintaining full compatibility with the existing system:
