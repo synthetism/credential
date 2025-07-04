@@ -28,11 +28,11 @@ export class JSONCredentialStorage<T extends W3CVerifiableCredential = W3CVerifi
   private readonly storageFile: string;
   private readonly backupFile: string;
   private credentials: Map<string, T> = new Map();
-  private lastSaveTime: number = 0;
+  private lastSaveTime= 0;
   private saveTimeout: NodeJS.Timeout | null = null;
 
   constructor(
-    storageFile: string = './credentials.json',
+    storageFile = './credentials.json',
     private readonly autosave: boolean = true,
     private readonly autosaveDelay: number = 1000,
   ) {
@@ -74,7 +74,7 @@ export class JSONCredentialStorage<T extends W3CVerifiableCredential = W3CVerifi
           
           console.log(`Loaded credentials from backup file: ${this.backupFile}`);
         } catch (backupError) {
-          console.error(`Failed to load backup file:`, backupError);
+          console.error('Failed to load backup file:', backupError);
           this.credentials = new Map();
         }
       } else {
@@ -269,7 +269,7 @@ export class JSONCredentialStorage<T extends W3CVerifiableCredential = W3CVerifi
       }
 
       // Count issuers
-      if (credential.issuer && credential.issuer.id) {
+      if (credential.issuer?.id) {
         stats.issuers[credential.issuer.id] = (stats.issuers[credential.issuer.id] || 0) + 1;
       }
     }
@@ -313,7 +313,7 @@ export class JSONCredentialStorage<T extends W3CVerifiableCredential = W3CVerifi
   /**
    * Import credentials from another storage file
    */
-  async import(sourceFile: string, overwrite: boolean = false): Promise<number> {
+  async import(sourceFile: string, overwrite: boolean | false): Promise<number> {
     try {
       if (!fs.existsSync(sourceFile)) {
         throw new Error(`Source file does not exist: ${sourceFile}`);
