@@ -17,6 +17,24 @@
 import { createId } from './utils.js';
 
 /**
+ * Unit schema interface for Key unit
+ */
+export interface UnitSchema {
+  name: string;
+  version: string;
+  description: string;
+  capabilities: string[];
+  children?: UnitSchema[];
+}
+
+/**
+ * Unit capabilities interface
+ */
+export interface UnitCapabilities {
+  [key: string]: unknown;
+}
+
+/**
  * Base64url encoding utilities (simplified)
  */
 function base64urlEncode(data: string): string {
@@ -106,12 +124,14 @@ export interface KeyMeta {
  * Key unit - the core key abstraction
  */
 export class Key {
+  
   public readonly id: string;
   public readonly publicKeyHex: string;
   public readonly privateKeyHex?: string;
   public readonly type: string;
   public readonly meta: KeyMeta;
   public readonly signer?: Signer;
+  private readonly unitDNA: UnitSchema;
 
   constructor(options: {
     id?: string;
@@ -127,6 +147,116 @@ export class Key {
     this.type = options.type || 'Ed25519';
     this.meta = options.meta || {};
     this.signer = options.signer;
+
+    // Initialize unit DNA
+    this.unitDNA = {
+      name: 'Key Unit',
+      version: '1.0.0',
+      description: 'I can create, manage and use cryptographic keys. Call .help() to see my capabilities.',
+      capabilities: this.buildCapabilities(),
+      children: []
+    };
+  }
+
+  /**
+   * Build capabilities array based on key type
+   */
+  private buildCapabilities(): string[] {
+    const capabilities = ['getPublicKey', 'verify', 'toJSON', 'toVerificationMethod'];
+    
+    if (this.canSign()) {
+      capabilities.push('sign');
+    }
+    
+    if (this.privateKeyHex) {
+      capabilities.push('toPublicKey');
+    }
+    
+    return capabilities;
+  }
+
+  /**
+   * Get unit DNA information
+   */
+  get dna(): UnitSchema {
+    return { ...this.unitDNA };
+  }
+
+  /**
+   * Get unit identity and version
+   */
+  get whoami(): string {
+    return `${this.unitDNA.name} v${this.unitDNA.version}`;
+  }
+
+  /**
+   * Display help information about this unit
+   */
+  help(): void {
+    console.log(`\n=== ${this.whoami} ===`);
+    console.log(`${this.unitDNA.description}\n`);
+    
+    console.log('🔑 Key Information:');
+    console.log(`  ID: ${this.id}`);
+    console.log(`  Type: ${this.type}`);
+    console.log(`  Can Sign: ${this.canSign()}`);
+    console.log(`  Public Key: ${this.publicKeyHex.substring(0, 20)}...`);
+    
+    console.log('\n🛠️ Available Capabilities:');
+    for (const cap of this.unitDNA.capabilities) {
+      console.log(`  • ${cap}()`);
+    }
+    
+    console.log('\n📖 Usage Examples:');
+    console.log('  key.getPublicKey()     // Get public key');
+    console.log('  key.sign(data)         // Sign data (if capable)');
+    console.log('  key.verify(data, sig)  // Verify signature');
+    console.log('  key.toJSON()           // Export key data');
+    console.log('  key.canSign()          // Check signing capability');
+    
+    if (this.privateKeyHex) {
+      console.log('  key.toPublicKey()      // Create public-only copy');
+    }
+    
+    console.log('\n💡 Unit Features:');
+    console.log('  • Transportable (toJSON/fromJSON)');
+    console.log('  • Composable (works with other units)');
+    console.log('  • Type-safe (DirectKey, SignerKey, PublicKey)');
+    console.log('  • Secure (private keys protected)');
+    console.log();
+  }
+
+  /**
+   * Static help method for the Key unit
+   */
+  static help(): void {
+    console.log('\n=== Key Unit v1.0.0 ===');
+    console.log('I can create, manage and use cryptographic keys.\n');
+    
+    console.log('🏗️ Creation Methods:');
+    console.log('  Key.create({ publicKeyHex, privateKeyHex })     // Direct key');
+    console.log('  Key.createWithSigner({ publicKeyHex, signer }) // Signer key');
+    console.log('  Key.createPublic({ publicKeyHex })             // Public key');
+    
+    console.log('\n🔑 Key Types:');
+    console.log('  • DirectKey   - Has private key material');
+    console.log('  • SignerKey   - Uses external signer (vault/HSM)');
+    console.log('  • PublicKey   - Verification only');
+    
+    console.log('\n🛠️ Core Capabilities:');
+    console.log('  • getPublicKey()     - Get public key');
+    console.log('  • sign(data)         - Sign data');
+    console.log('  • verify(data, sig)  - Verify signature');
+    console.log('  • canSign()          - Check signing capability');
+    console.log('  • toJSON()           - Export key data');
+    console.log('  • help()             - Show instance help');
+    
+    console.log('\n💡 Unit Features:');
+    console.log('  • Pure and composable');
+    console.log('  • Type-safe with progressive security');
+    console.log('  • Vault/HSM ready');
+    console.log('  • Zero magic abstractions');
+    console.log();
   }
 
   /**

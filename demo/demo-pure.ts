@@ -15,8 +15,8 @@ import {
   type IdentitySubject,
   type DirectKey,
   type SignerKey,
-} from './src/index';
-import { generateTestDirectKey, generateTestSignerKey, createDIDFromKey } from './test/helpers';
+} from '../src/index';
+import { generateTestDirectKey, generateTestSignerKey, createDIDFromKey } from '../test/helpers';
 
 async function main() {
   console.log('🔑 Pure @synet/credential API Demo');
