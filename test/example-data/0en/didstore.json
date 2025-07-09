@@ -1,0 +1,22 @@
+{
+  "did:key:z6MkoaFqc5NmLYjYC7RACiYcC9g2C2PA3ss9e4jeCwbNKmvz": {
+    "did": "did:key:z6MkoaFqc5NmLYjYC7RACiYcC9g2C2PA3ss9e4jeCwbNKmvz",
+    "controllerKeyId": "878403abd8b32881ce5ceb125ed97563ad483ea5f43d71b012184657ce07d8cb",
+    "keys": [
+      {
+        "type": "Ed25519",
+        "kid": "878403abd8b32881ce5ceb125ed97563ad483ea5f43d71b012184657ce07d8cb",
+        "publicKeyHex": "878403abd8b32881ce5ceb125ed97563ad483ea5f43d71b012184657ce07d8cb",
+        "meta": {
+          "algorithms": [
+            "EdDSA",
+            "Ed25519"
+          ]
+        },
+        "kms": "local"
+      }
+    ],
+    "services": [],
+    "provider": "did:key"
+  }
+}

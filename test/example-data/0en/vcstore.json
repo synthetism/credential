@@ -1,0 +1,30 @@
+{
+  "urn:synet:IdentityCredential:mwinrtvoqydk9b313w5henbg": {
+    "credentialSubject": {
+      "holder": {
+        "id": "did:key:z6MkoaFqc5NmLYjYC7RACiYcC9g2C2PA3ss9e4jeCwbNKmvz",
+        "name": "0en"
+      },
+      "issuedBy": {
+        "id": "did:key:z6MkoaFqc5NmLYjYC7RACiYcC9g2C2PA3ss9e4jeCwbNKmvz",
+        "name": "0en"
+      }
+    },
+    "issuer": {
+      "id": "did:key:z6MkoaFqc5NmLYjYC7RACiYcC9g2C2PA3ss9e4jeCwbNKmvz"
+    },
+    "id": "urn:synet:IdentityCredential:mwinrtvoqydk9b313w5henbg",
+    "type": [
+      "VerifiableCredential",
+      "IdentityCredential"
+    ],
+    "@context": [
+      "https://www.w3.org/2018/credentials/v1"
+    ],
+    "issuanceDate": "2025-07-09T11:43:25.000Z",
+    "proof": {
+      "type": "JwtProof2020",
+      "jwt": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJ2YyI6eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy92MSJdLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiSWRlbnRpdHlDcmVkZW50aWFsIl0sImNyZWRlbnRpYWxTdWJqZWN0Ijp7ImhvbGRlciI6eyJpZCI6ImRpZDprZXk6ejZNa29hRnFjNU5tTFlqWUM3UkFDaVljQzlnMkMyUEEzc3M5ZTRqZUN3Yk5LbXZ6IiwibmFtZSI6IjBlbiJ9LCJpc3N1ZWRCeSI6eyJpZCI6ImRpZDprZXk6ejZNa29hRnFjNU5tTFlqWUM3UkFDaVljQzlnMkMyUEEzc3M5ZTRqZUN3Yk5LbXZ6IiwibmFtZSI6IjBlbiJ9fX0sImp0aSI6InVybjpzeW5ldDpJZGVudGl0eUNyZWRlbnRpYWw6bXdpbnJ0dm9xeWRrOWIzMTN3NWhlbmJnIiwibmJmIjoxNzUyMDYxNDA1LCJpc3MiOiJkaWQ6a2V5Ono2TWtvYUZxYzVObUxZallDN1JBQ2lZY0M5ZzJDMlBBM3NzOWU0amVDd2JOS212eiJ9.2w5QVoSUzsVIk9eHo0V2ePSChRLqk51aah4o--jrlzcFSudiH4Ec-22qOiCtb1jhS0i3A6CjzqvFtsnzBSj3Cw"
+    }
+  }
+}

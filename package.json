@@ -34,7 +34,7 @@
     "@biomejs/biome": "^1.9.4",
     "@synet/did": "^1.0.4-dev.0",
     "@synet/fs": "^1.0.1",
-    "@synet/keys": "^1.0.5-dev.4",
+    "@synet/keys": "^1.0.5-dev.5",
     "@synet/storage": "^1.0.0",
     "@types/node": "^22.15.31",
     "@vitest/coverage-v8": "^3.1.3",

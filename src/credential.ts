@@ -1,74 +1,231 @@
 /**
- * Pure Credential Functions for @synet/credential
+ * @synet/credential - Unit-based W3C Verifiable Credential operations
  * 
- * This module provides pure, composable functions for issuing and verifying
- * W3C-compatible verifiable credentials using the new Key/Signer architecture.
+ * This unit provides W3C-compatible verifiable credential operations
+ * using the learning pattern to acquire crypto capabilities from 
+ * other units (@synet/signer, @synet/keys, etc.)
  * 
- * Key design principles:
- * - Pure functions (no side effects)
- * - Composable and testable
- * - Type-safe operations
- * - Minimal dependencies
- * - Progressive security model
+ * Key features:
+ * - Learning-based architecture (no tight coupling)
+ * - Progressive capability acquisition
+ * - W3C-compatible credential formats using existing types
+ * - Composable with crypto units
+ * - Uses existing issueVC/verifyVC functions internally
+ * 
+ * Usage pattern:
+ * ```typescript
+ * const signer = new Signer();
+ * const credential = new CredentialUnit();
+ * 
+ * // Learn crypto capabilities
+ * credential.learn([signer.teach()]);
+ * 
+ * // Issue credential
+ * const vc = await credential.execute('issue', subject, type, issuer);
+ * ```
  * 
  * @author Synet Team
  */
 
-import { createId } from './utils';
-import type { CredentialKey } from './key';
+import { Unit, createUnitSchema, type TeachingContract } from '@synet/unit';
+import { createId, base64urlDecode, base64urlEncode } from './utils';
 import type {
   W3CVerifiableCredential,
   BaseCredentialSubject,
   CredentialIssueOptions,
   CredentialVerifyOptions,
   VerificationResult,
-  ProofType,
+  ProofType
 } from './types-base';
 
-// Note: In production, import from @synet/patterns when available
-// For now, we'll use a simple Result implementation
-interface ResultSuccess<T> {
-  success: true;
-  data: T;
-  error?: never;
-}
-
-interface ResultFailure {
-  success: false;
-  data?: never;
-  error: string;
-}
-
-export type Result<T> = ResultSuccess<T> | ResultFailure;
-
-export const Result = {
-  ok<T>(data: T): ResultSuccess<T> {
-    return { success: true, data };
-  },
-
-  fail(error: string): ResultFailure {
-    return { success: false, error };
-  },
-};
-
-
-/**
- * Default W3C contexts
- */
 const DEFAULT_CONTEXT = ['https://www.w3.org/2018/credentials/v1'];
 
-/**
- * Generate a unique credential ID
- */
-export function generateCredentialId(type: string): string {
-  const cuid = createId();
-  return `urn:synet:${type}:${cuid}`;
+// ==========================================
+// CREDENTIAL UNIT IMPLEMENTATION
+// ==========================================
+
+export class CredentialUnit extends Unit {
+
+  private _audit: string[] = [];
+  private _log: string[] = [];
+
+  constructor() {
+    super(createUnitSchema({
+      id: 'credential',
+      version: '1.0.0'
+    }));
+  }
+
+  getAudit(): string[] {
+    return this._audit;
+  }
+
+  getLog(): string[] {
+    return this._log;
+  }
+
+  private log(msg: string): void {
+    this._log.push(msg);
+
+    if(this.can('logger.log')) {
+      this.execute('logger.log',{id: this.dna.id, message: msg});
+    } 
+  }
+
+  whoami(): string {
+    return `CredentialUnit@${this.dna.id} - W3C Verifiable Credential operations`;
+  }
+
+  capabilities(): string[] {
+    return this._getAllCapabilities();
+  }
+
+  help(): void {
+    console.log(`
+🎓 CredentialUnit - W3C Verifiable Credential Operations
+
+Native Methods:
+- issueCredential(subject, type, issuerDid, options?): Create W3C Verifiable Credentials
+- verifyCredential(credential, options?): Verify credential signatures and structure  
+- validateStructure(credential): Validate credential structure without crypto
+
+Required Learning:
+- Learn from @synet/keys Key unit to get: getPublicKey, sign, verify
+
+Usage Pattern:
+1. Create unit: const credential = new CredentialUnit()
+2. Learn from key: credential.learn([key.teach()])
+3. Issue VC: await credential.issueCredential(subject, type, issuer)
+
+Example:
+const signer = Signer.generate('ed25519');
+const key = signer.createKey();
+const credential = new CredentialUnit();
+credential.learn([key.teach()]);
+const result = await credential.issueCredential(
+  { id: 'did:example:123', name: 'Alice' },
+  'UniversityDegree', 
+  'did:example:university'
+);
+    `);
+  }
+
+  teach(): TeachingContract {
+    return {
+      unitId: this.dna.id,
+      capabilities: {
+        issueCredential: (...args: unknown[]) => this.issueCredential(
+          args[0] as BaseCredentialSubject,
+          args[1] as string | string[],
+          args[2] as string,
+          args[3] as CredentialIssueOptions | undefined
+        ),
+        verifyCredential: (...args: unknown[]) => this.verifyCredential(
+          args[0] as W3CVerifiableCredential,
+          args[1] as CredentialVerifyOptions | undefined
+        ),
+        validateStructure: (...args: unknown[]) => this.validateStructure(
+          args[0] as W3CVerifiableCredential
+        ),
+        error: () => this.error || '',
+        stack: () => this.stack || [],
+      }
+    };
+  }
+
+  // ==========================================
+  // CORE CREDENTIAL OPERATIONS
+  // ==========================================
+
+  /**
+   * Issue a verifiable credential using the existing issueVC function
+   * Requires learned getPublicKey and sign capabilities from Key
+   */
+ async issueCredential<S extends BaseCredentialSubject>(
+
+  subject: S,
+  type: string | string[],
+  issuerDid: string,
+  options?: CredentialIssueOptions
+): Promise<W3CVerifiableCredential<S> | null> {
+  try {
+    // Check capabilities first
+    if (!this.can('getPublicKey') || !this.can('sign')) {
+      return this.fail('Cannot issue credential: missing getPublicKey or sign capability. Learn from a crypto unit.');
+    }
+
+    // Create credential payload
+    const payload = this.createCredentialPayload(
+      subject,
+      type,
+      issuerDid,
+      options
+    );
+
+    // Create proof based on format
+    const proofFormat = options?.proofFormat || 'jwt';
+
+    let proof: ProofType;
+
+    if (proofFormat === 'jwt') {
+      const proofResult = await this.createJWTProof(payload,  issuerDid);
+
+      if(!proofResult) {
+        return this.fail(`Failed to create JWT proof: ${this.error}`);
+      }
+
+      proof = proofResult;
+      
+    } else {
+      // Unsupported proof format
+      return this.fail(`Unsupported proof format: ${proofFormat}`);
+  
+    }
+
+    const credential: W3CVerifiableCredential<S> = {
+      ...payload,
+      proof: proof as ProofType,
+    };
+
+    return credential;
+  } catch (error) {
+    return this.fail(
+      `Failed to issue credential: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
 }
 
 /**
- * Create a credential payload (without proof)
+ * Verify a verifiable credential
+ * 
+ * Pure function that verifies a W3C verifiable credential
+ * using the provided verification key.
  */
-export function createCredentialPayload<S extends BaseCredentialSubject>(
+ async verifyCredential(
+
+  credential: W3CVerifiableCredential,
+  options?: CredentialVerifyOptions
+): Promise<VerificationResult | null> {
+  try {
+    const { proof } = credential;
+
+    // Verify based on proof type
+    if (proof.type === 'JwtProof2020' && proof.jwt) {
+      return await this.verifyJWTProof(credential,  options);
+    }
+
+    return this.fail(`Unsupported proof type: ${proof.type}`);
+
+  } catch (error) {
+    return this.fail(
+      `Failed to verify credential: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}
+
+
+
+createCredentialPayload<S extends BaseCredentialSubject>(
   subject: S,
   type: string | string[],
   issuerDid: string,
@@ -83,7 +240,7 @@ export function createCredentialPayload<S extends BaseCredentialSubject>(
 
   return {
     '@context': context,
-    id: options?.vcId || generateCredentialId(appType),
+    id: options?.vcId || this.generateCredentialId(appType),
     type: ['VerifiableCredential', ...typeArray],
     issuer: { id: issuerDid },
     issuanceDate: options?.issuanceDate || new Date().toISOString(),
@@ -93,328 +250,225 @@ export function createCredentialPayload<S extends BaseCredentialSubject>(
   };
 }
 
-/**
- * Create a JWT proof for a credential
- */
-export async function createJWTProof(
-  payload: Omit<W3CVerifiableCredential, 'proof'>,
-  key: CredentialKey,
-  issuerDid?: string
-): Promise<Result<ProofType>> {
-  try {
-    if (!key.canSign()) {
-      return Result.fail('Key cannot sign: no private key or signer available');
-    }
-
-    const jwtHeader = {
-      alg: 'EdDSA',
-      typ: 'JWT',
-    };
-
-    const jwtPayload = {
-      vc: payload,
-      jti: payload.id,
-      nbf: Math.floor(new Date(payload.issuanceDate).getTime() / 1000),
-      iss: issuerDid || payload.issuer.id,
-      ...(payload.expirationDate && {
-        exp: Math.floor(new Date(payload.expirationDate).getTime() / 1000),
-      }),
-    };
-
-    const headerB64 = base64urlEncode(JSON.stringify(jwtHeader));
-    const payloadB64 = base64urlEncode(JSON.stringify(jwtPayload));
-    const signingInput = `${headerB64}.${payloadB64}`;
-
-    const signature = await key.sign(signingInput);
-    const jwt = `${signingInput}.${signature}`;
-
-    return Result.ok({
-      type: 'JwtProof2020',
-      jwt,
-      verificationMethod: issuerDid,
-    });
-  } catch (error) {
-    return Result.fail(
-      `Failed to create JWT proof: ${error instanceof Error ? error.message : String(error)}`
-    );
+  generateCredentialId(type: string): string {
+    const cuid = createId();
+    return `urn:synet:${type}:${cuid}`;
   }
-}
 
-/**
- * Verify a JWT proof
- */
-export async function verifyJWTProof(
-  credential: W3CVerifiableCredential,
-  verificationKey: CredentialKey,
-  options?: CredentialVerifyOptions
-): Promise<Result<VerificationResult>> {
-  try {
-    const { proof } = credential;
-
-    if (!proof.jwt) {
-      return Result.fail('No JWT found in proof');
-    }
-
-    const jwtParts = proof.jwt.split('.');
-    if (jwtParts.length !== 3) {
-      return Result.fail('Invalid JWT format');
-    }
-
-    const [headerB64, payloadB64, signature] = jwtParts;
-    const signingInput = `${headerB64}.${payloadB64}`;
-
+  
+  /**
+   * Create a JWT proof for a credential
+   * Follows JWT standard (RFC 7515) - uses base64url encoding for signature
+   */
+   async createJWTProof(
+    payload: Omit<W3CVerifiableCredential, 'proof'>,
+    issuerDid?: string
+  ): Promise<ProofType | null> { 
     try {
-      const jwtPayload = JSON.parse(base64urlDecode(payloadB64));
-      const issuerDid = jwtPayload.iss;
+      const jwtHeader = {
+        alg: 'EdDSA',
+        typ: 'JWT',
+      };
+  
+      const jwtPayload = {
+        vc: payload,
+        jti: payload.id,
+        nbf: Math.floor(new Date(payload.issuanceDate).getTime() / 1000),
+        iss: issuerDid || payload.issuer.id,
+        ...(payload.expirationDate && {
+          exp: Math.floor(new Date(payload.expirationDate).getTime() / 1000),
+        }),
+      };
+  
+      const headerB64 = base64urlEncode(JSON.stringify(jwtHeader));
+      const payloadB64 = base64urlEncode(JSON.stringify(jwtPayload));
+      const signingInput = `${headerB64}.${payloadB64}`;
+      
+      // Get signature from signer (returns base64)
+      const base64Signature = await this.execute('sign', signingInput) as string;
 
-      // Verify signature
-      const isValidSignature = await verificationKey.verify(signingInput, signature);
-
-      if (!isValidSignature) {
-        return Result.fail('Invalid signature');
+      if (!base64Signature) {
+        return this.fail('Failed to sign JWT proof');
       }
 
-      // Check expiration if requested
-      if (options?.checkExpiration !== false && jwtPayload.exp) {
-        const now = Math.floor(Date.now() / 1000);
-        if (now > jwtPayload.exp) {
-          return Result.fail('Credential has expired');
-        }
-      }
-
-      // Check issuer if requested
-      if (options?.expectedIssuer && issuerDid !== options.expectedIssuer) {
-        return Result.fail(`Unexpected issuer: ${issuerDid}`);
-      }
-
-      return Result.ok({
-        verified: true,
-        issuer: issuerDid,
-        subject: credential.credentialSubject.holder.id,
-        issuanceDate: credential.issuanceDate,
-        expirationDate: credential.expirationDate,
-      });
-    } catch (parseError) {
-      return Result.fail(
-        `Failed to parse JWT payload: ${parseError instanceof Error ? parseError.message : String(parseError)}`
+      // The signature is already in base64url format from the Signer
+      const jwt = `${signingInput}.${base64Signature}`;
+  
+      return {
+        type: 'JwtProof2020',
+        jwt,
+        verificationMethod: issuerDid,
+      };
+    } catch (error) {
+      return this.fail(
+        `Failed to create JWT proof: ${error instanceof Error ? error.message : String(error)}`
       );
     }
-  } catch (error) {
-    return Result.fail(
-      `Failed to verify JWT proof: ${error instanceof Error ? error.message : String(error)}`
-    );
   }
-}
+  
+  /**
+   * Verify a JWT proof
+   * Converts base64url signature back to base64 for verification
+   */
+  async  verifyJWTProof(
+    credential: W3CVerifiableCredential,
+    options?: CredentialVerifyOptions
+  ): Promise<VerificationResult | null> {
+    try {
+      const { proof } = credential;
+  
+      if (!proof.jwt) {
+        return this.fail('No JWT found in proof');
+      }
+  
+      const jwtParts = proof.jwt.split('.');
+      if (jwtParts.length !== 3) {
+        return this.fail('Invalid JWT format');
+      }
+  
+      const [headerB64, payloadB64, base64urlSignature] = jwtParts;
+      const signingInput = `${headerB64}.${payloadB64}`;
+  
+      try {
+        const jwtPayload = JSON.parse(base64urlDecode(payloadB64));
+        const issuerDid = jwtPayload.iss;
+  
+        if(!this.can('getPublicKey') || !this.can('verify')) {
+          return this.fail('Missing getPublicKey or verify capability');
+        }
+        
+        // The signature is already in base64url format - our verify function handles both formats
+        // Verify signature
+        const isValidSignature = await this.execute('verify', signingInput, base64urlSignature);
 
-/**
- * Issue a new verifiable credential
- * 
- * Pure function that creates a complete W3C verifiable credential
- * with proof using the provided key.
- */
-export async function issueVC<S extends BaseCredentialSubject>(
-  subject: S,
-  type: string | string[],
-  issuerDid: string,
-  options?: CredentialIssueOptions
-): Promise<Result<W3CVerifiableCredential<S>>> {
-  try {
- 
+        if (!isValidSignature) {
+          return this.fail('Invalid signature');
+        }
 
-    // Create credential payload
-    const payload = createCredentialPayload(
-      subject,
-      type,
-      issuerDid,
-      options
-    );
+        // Verify that the JWT payload matches the credential payload
+        const expectedVc = jwtPayload.vc;
+        if (!expectedVc) {
+          return this.fail('Missing vc claim in JWT payload');
+        }
 
-    // Create proof based on format
-    const proofFormat = options?.proofFormat || 'jwt';
+        // Create a copy of the credential without the proof for comparison
+        const { proof: _proof, ...credentialWithoutProof } = credential;
+        
+        // Veramo-style verification: JWT vc claim contains subset of credential fields
+        // We verify that all fields in JWT vc exist and match in the credential
+        for (const [key, value] of Object.entries(expectedVc)) {
+          const credentialValue = (credentialWithoutProof as Record<string, unknown>)[key];
+          if (JSON.stringify(credentialValue) !== JSON.stringify(value)) {
+            return this.fail(`JWT payload field "${key}" does not match credential data`);
+          }
+        }
+        
+        // Additional verification: ensure required fields are present in credential
+        if (!credentialWithoutProof.id || !credentialWithoutProof.issuer || !credentialWithoutProof.issuanceDate) {
+          return this.fail('Missing required credential fields');
+        }
+  
+        // Check expiration if requested
+        if (options?.checkExpiration !== false && jwtPayload.exp) {
+          const now = Math.floor(Date.now() / 1000);
+          if (now > jwtPayload.exp) {
+            return this.fail('Credential has expired');
+          }
+        }
+  
+        // Check issuer if requested
+        if (options?.expectedIssuer && issuerDid !== options.expectedIssuer) {
+          return this.fail(`Unexpected issuer: ${issuerDid}`);
+        }
 
-    let proofResult: Result<ProofType>;
-    if (proofFormat === 'jwt') {
-      proofResult = await createJWTProof(payload,  issuerDid);
-    } else {
-      return Result.fail(`Unsupported proof format: ${proofFormat}`);
+        return {
+          verified: true,
+          issuer: issuerDid,
+          subject: credential.credentialSubject.holder.id,
+          issuanceDate: credential.issuanceDate,
+          expirationDate: credential.expirationDate,
+        }
+
+      } catch (parseError) {
+        return this.fail(
+          `Failed to parse JWT payload: ${parseError instanceof Error ? parseError.message : String(parseError)}`
+        );
+      }
+    } catch (error) {
+      return this.fail(
+        `Failed to verify JWT proof: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
-
-    if (!proofResult.success) {
-      return Result.fail(`Failed to create proof: ${proofResult.error}`);
-    }
-
-    const credential: W3CVerifiableCredential<S> = {
-      ...payload,
-      proof: proofResult.data,
-    };
-
-    return Result.ok(credential);
-  } catch (error) {
-    return Result.fail(
-      `Failed to issue credential: ${error instanceof Error ? error.message : String(error)}`
-    );
   }
-}
 
-/**
- * Verify a verifiable credential
- * 
- * Pure function that verifies a W3C verifiable credential
- * using the provided verification key.
- */
-export async function verifyVC(
-  verificationKey: CredentialKey,
-  credential: W3CVerifiableCredential,
-  options?: CredentialVerifyOptions
-): Promise<Result<VerificationResult>> {
-  try {
-    const { proof } = credential;
-
-    // Verify based on proof type
-    if (proof.type === 'JwtProof2020' && proof.jwt) {
-      return await verifyJWTProof(credential, verificationKey, options);
-    }
-
-    return Result.fail(`Unsupported proof type: ${proof.type}`);
-  } catch (error) {
-    return Result.fail(
-      `Failed to verify credential: ${error instanceof Error ? error.message : String(error)}`
-    );
-  }
-}
-
-/**
- * Extract credential metadata
- */
-export function extractMetadata(credential: W3CVerifiableCredential): {
-  id: string;
-  type: string[];
-  issuer: string;
-  subject: string;
-  issuanceDate: string;
-  expirationDate?: string;
-  version?: string;
-  schema?: string;
-} {
-  return {
-    id: credential.id,
-    type: credential.type,
-    issuer: credential.issuer.id,
-    subject: credential.credentialSubject.holder.id,
-    issuanceDate: credential.issuanceDate,
-    expirationDate: credential.expirationDate,
-    version: credential.meta?.version,
-    schema: credential.meta?.schema,
-  };
-}
-
-/**
- * Validate credential structure
- */
-export function validateCredential(credential: unknown): Result<W3CVerifiableCredential> {
-  try {
-    if (!credential || typeof credential !== 'object') {
-      return Result.fail('Credential must be an object');
-    }
-
-    const vc = credential as Record<string, unknown>;
-
+  /**
+   * Validate credential structure without cryptographic verification
+   */
+  async validateStructure(credential: W3CVerifiableCredential): Promise<{
+    valid: boolean;
+    reason?: string;
+  }> {
     // Check required fields
-    const requiredFields = [
-      '@context',
-      'id',
-      'type',
-      'issuer',
-      'issuanceDate',
-      'credentialSubject',
-      'proof',
-    ];
-    for (const field of requiredFields) {
-      if (!(field in vc)) {
-        return Result.fail(`Missing required field: ${field}`);
+    if (!credential || typeof credential !== 'object') {
+      return { valid: false, reason: 'Invalid credential structure' };
+    }
+
+    if (!credential['@context'] || !Array.isArray(credential['@context'])) {
+      return { valid: false, reason: 'Missing or invalid @context' };
+    }
+
+    if (!credential.type || !Array.isArray(credential.type) || !credential.type.includes('VerifiableCredential')) {
+      return { valid: false, reason: 'Missing or invalid type' };
+    }
+
+    if (!credential.issuer) {
+      return { valid: false, reason: 'Missing issuer' };
+    }
+
+    if (!credential.issuanceDate) {
+      return { valid: false, reason: 'Missing issuanceDate' };
+    }
+
+    if (!credential.credentialSubject || !credential.credentialSubject.holder) {
+      return { valid: false, reason: 'Missing or invalid credentialSubject' };
+    }
+
+    if (!credential.proof) {
+      return { valid: false, reason: 'Missing proof' };
+    }
+
+    return { valid: true };
+  }
+
+  /**
+   * Check if this unit can perform a capability
+   */
+  can(capability: string): boolean {
+    return this.capabilities().includes(capability);
+  }
+
+  /**
+   * Learn capabilities from other units (especially @synet/keys Key)
+   */
+  learn(contracts: TeachingContract[]): void {
+    for (const contract of contracts) {
+      for (const [cap, impl] of Object.entries(contract.capabilities)) {
+        // Learn key capabilities that we need for credential operations
+        if (cap === 'getPublicKey' || cap === 'sign' || cap === 'verify') {
+          this._addCapability(cap, impl);
+          console.log(`📚 CredentialUnit learned: ${cap} from ${contract.unitId}`);
+          this.log(`Learned capability: ${cap} from ${contract.unitId}`);
+        }
       }
     }
-
-    // Validate context
-    if (!Array.isArray(vc['@context'])) {
-      return Result.fail('@context must be an array');
-    }
-
-    // Validate type
-    if (!Array.isArray(vc.type)) {
-      return Result.fail('type must be an array');
-    }
-
-    // Validate issuer
-    if (!vc.issuer || typeof vc.issuer !== 'object' || !('id' in (vc.issuer as object))) {
-      return Result.fail('issuer must be an object with id property');
-    }
-
-    // Validate credential subject
-    if (!vc.credentialSubject || typeof vc.credentialSubject !== 'object') {
-      return Result.fail('credentialSubject must be an object');
-    }
-
-    const subject = vc.credentialSubject as Record<string, unknown>;
-    if (!subject.holder || typeof subject.holder !== 'object' || !('id' in (subject.holder as object))) {
-      return Result.fail('credentialSubject must have a holder with id property');
-    }
-
-    // Validate proof
-    if (!vc.proof || typeof vc.proof !== 'object' || !('type' in (vc.proof as object))) {
-      return Result.fail('proof must be an object with type property');
-    }
-
-    return Result.ok(credential as W3CVerifiableCredential);
-  } catch (error) {
-    return Result.fail(
-      `Invalid credential structure: ${error instanceof Error ? error.message : String(error)}`
-    );
+    
+    // Call parent learn for any other capabilities
+    super.learn(contracts);
   }
 }
 
-/**
- * Utility functions for credential operations
- */
-export const CredentialUtils = {
-  /**
-   * Check if a credential is expired
-   */
-  isExpired(credential: Pick<W3CVerifiableCredential, 'expirationDate'>): boolean {
-    if (!credential.expirationDate) {
-      return false;
-    }
+// ==========================================
+// EXPORTS
+// ==========================================
 
-    return new Date(credential.expirationDate) < new Date();
-  },
-
-  /**
-   * Get credential age in milliseconds
-   */
-  getCredentialAge(credential: Pick<W3CVerifiableCredential, 'issuanceDate'>): number {
-    const issuanceDate = new Date(credential.issuanceDate);
-    return Date.now() - issuanceDate.getTime();
-  },
-
-  /**
-   * Get credential types without the base VerifiableCredential type
-   */
-  getCredentialTypes(credential: Pick<W3CVerifiableCredential, 'type'>): string[] {
-    return credential.type.filter(t => t !== 'VerifiableCredential');
-  },
-
-  /**
-   * Check if credential has a specific type
-   */
-  hasType(credential: Pick<W3CVerifiableCredential, 'type'>, type: string): boolean {
-    return credential.type.includes(type);
-  },
-
-  /**
-   * Get credential's primary type (first non-VerifiableCredential type)
-   */
-  getPrimaryType(credential: Pick<W3CVerifiableCredential, 'type'>): string {
-    const types = CredentialUtils.getCredentialTypes(credential);
-    return types[0] || 'Generic';
-  },
-};
+export default CredentialUnit;

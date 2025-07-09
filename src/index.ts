@@ -8,7 +8,7 @@ export * from "./types-synet";
 export * from "./key";
 
 // Export new pure credential functions
-export * from "./credential";
+export * from "./credential_";
 
 // Export utilities
 export * from "./utils";

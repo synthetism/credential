@@ -5,7 +5,7 @@
  * signer -> credential -> issue VC
  */
 
-import { CredentialUnit } from '../src/credential-unit';
+import { CredentialUnit } from '../src/credential';
 
 async function testCredentialUnit() {
   console.log('🎓 Testing @synet/credential CredentialUnit\n');
