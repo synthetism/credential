@@ -31,3 +31,59 @@ export function createId(length = 24): string {
   // Combine first letter with hash, ensuring we get the right length
   return (firstLetter + base36Hash).substring(0, length);
 }
+
+
+
+/**
+ * Base64url encoding utilities (simplified)
+ */
+export function base64urlEncode(data: string): string {
+  try {
+    // Try Node.js Buffer first
+    const nodeBuffer = (globalThis as Record<string, unknown>)?.Buffer;
+    if (nodeBuffer && typeof nodeBuffer === 'object' && 'from' in nodeBuffer) {
+      return (nodeBuffer as {
+        from: (data: string) => { toString: (encoding: string) => string };
+      }).from(data).toString('base64url');
+    }
+
+    // Fallback to browser btoa
+    const browserBtoa = (globalThis as Record<string, unknown>)?.btoa;
+    if (browserBtoa && typeof browserBtoa === 'function') {
+      return (browserBtoa as (data: string) => string)(data)
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '');
+    }
+
+    throw new Error('No base64 encoding available');
+  } catch (error) {
+    throw new Error(`Base64 encoding failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+export function base64urlDecode(data: string): string {
+  try {
+    // Try Node.js Buffer first
+    const nodeBuffer = (globalThis as Record<string, unknown>)?.Buffer;
+    if (nodeBuffer && typeof nodeBuffer === 'object' && 'from' in nodeBuffer) {
+      return (nodeBuffer as {
+        from: (data: string, encoding: string) => { toString: () => string };
+      }).from(data, 'base64url').toString();
+    }
+
+    // Fallback to browser atob
+    const browserAtob = (globalThis as Record<string, unknown>)?.atob;
+    if (browserAtob && typeof browserAtob === 'function') {
+      let base64 = data.replace(/-/g, '+').replace(/_/g, '/');
+      while (base64.length % 4) {
+        base64 += '=';
+      }
+      return (browserAtob as (data: string) => string)(base64);
+    }
+
+    throw new Error('No base64 decoding available');
+  } catch (error) {
+    throw new Error(`Base64 decoding failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
