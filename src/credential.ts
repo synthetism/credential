@@ -14,8 +14,8 @@
  * @author Synet Team
  */
 
-import { createId } from './utils.js';
-import type { Key } from './key';
+import { createId } from './utils';
+import type { CredentialKey } from './key';
 import type {
   W3CVerifiableCredential,
   BaseCredentialSubject,
@@ -151,7 +151,7 @@ export function createCredentialPayload<S extends BaseCredentialSubject>(
  */
 export async function createJWTProof(
   payload: Omit<W3CVerifiableCredential, 'proof'>,
-  key: Key,
+  key: CredentialKey,
   issuerDid?: string
 ): Promise<Result<ProofType>> {
   try {
@@ -198,7 +198,7 @@ export async function createJWTProof(
  */
 export async function verifyJWTProof(
   credential: W3CVerifiableCredential,
-  verificationKey: Key,
+  verificationKey: CredentialKey,
   options?: CredentialVerifyOptions
 ): Promise<Result<VerificationResult>> {
   try {
@@ -266,7 +266,7 @@ export async function verifyJWTProof(
  * with proof using the provided key.
  */
 export async function issueVC<S extends BaseCredentialSubject>(
-  key: Key,
+  key: CredentialKey,
   subject: S,
   type: string | string[],
   issuerDid: string,
@@ -319,7 +319,7 @@ export async function issueVC<S extends BaseCredentialSubject>(
  * using the provided verification key.
  */
 export async function verifyVC(
-  verificationKey: Key,
+  verificationKey: CredentialKey,
   credential: W3CVerifiableCredential,
   options?: CredentialVerifyOptions
 ): Promise<Result<VerificationResult>> {

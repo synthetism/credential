@@ -1,20 +1,20 @@
-# @synet/credential
+#  @synet/credential
 
 ```bash
-   _____                  _       
-  / ____|                | |                   
- | (___  _   _ _ __   ___| |_                  
-  \___ \| | | | '_ \ / _ \ __|                 
-  ____) | |_| | | | |  __/ |_                  
- |_____/ \__, |_| |_|\___|\__|                 
-          __/ |                                
+   _____                  _   
+  / ____|                | |               
+ | (___  _   _ _ __   ___| |_              
+  \___ \| | | | '_ \ / _ \ __|             
+  ____) | |_| | | | |  __/ |_              
+ |_____/ \__, |_| |_|\___|\__|             
+          __/ |                            
      ____|___/          _            _   _       _ 
     / ____|            | |          | | (_)     | |
    | |     _ __ ___  __| | ___ _ __ | |_ _  __ _| |
    | |    | '__/ _ \/ _` |/ _ \ '_ \| __| |/ _` | |
    | |____| | |  __/ (_| |  __/ | | | |_| | (_| | |
     \_____|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_|
-                                               
+                                           
 version: 1.0.0  
 ```
 
@@ -133,6 +133,7 @@ const exported = key.toJSON();                 // Export (no private key)
 key.help();                        // Show all capabilities
 console.log(key.whoami);           // "Key Unit v1.0.0"
 ```
+
 ### Progressive Security Models
 
 The Key Unit architecture (from `@synet/keys`) supports multiple security models:
@@ -274,14 +275,6 @@ async function issueVC<S extends BaseCredentialSubject>(
 // Verify a verifiable credential
 async function verifyVC(
   verificationKey: Key,        // The verification key unit from @synet/keys
-  credential: W3CVerifiableCredential,
-  options?: CredentialVerifyOptions
-): Promise<Result<VerificationResult>>
-```
-
-// Verify a verifiable credential
-async function verifyVC(
-  verificationKey: Key,        // The verification key unit
   credential: W3CVerifiableCredential,
   options?: CredentialVerifyOptions
 ): Promise<Result<VerificationResult>>
@@ -617,269 +610,103 @@ const isExpired = CredentialUtils.isExpired(credential);
 const age = CredentialUtils.getCredentialAge(credential);
 ```
 
-## Credential Types
+## CredentialKey Interface
 
-The library supports various credential types out of the box:
+### Version Conflicts
 
-### Identity Credentials
-
-- `IdentityCredential`: Basic identity assertion
-
-### Authorization Credentials
-
-- `AuthorizationCredential`: General authorization
-
-### Asset Credentials
-
-- `AssetCredential`: Base Asset Credential
-
-### Governance Credentials
-
-- `PolicyCredential`: Base Policy declaration
-
-### Declaration Credentials
-
-- `DeclarationCredential`: Base Policy declaration
-
-## Custom Credential Subject Types
-
-You can easily create custom credential types:
+When two packages depend on different versions of the same library, you can get **"Type incompatibility"** errors even when the functionality is identical. This is especially problematic with key types:
 
 ```typescript
-interface CustomSubject extends BaseCredentialSubject {
-  customField: string;
-  additionalData: {
-    value: number;
-    metadata: Record<string, unknown>;
-  };
-}
+// This fails if @synet/keys v1.0.0 and v1.0.1 are used together
+import { Key as KeyV1 } from '@synet/keys@1.0.0';
+import { Key as KeyV2 } from '@synet/keys@1.0.1';
 
-const customSubject: CustomSubject = {
-  holder: { id: 'did:key:holder123' },
-  customField: 'custom-value',
-  additionalData: {
-    value: 42,
-    metadata: { source: 'api', version: '1.0' },
-  },
-};
-
-const result = await issueVC(
-  issuerKey,
-  customSubject,
-  'CustomCredential',
-  issuerDid
-);
+// Type error: KeyV1 is not assignable to KeyV2
+function useKey(key: KeyV2) { ... }
+useKey(keyV1Instance); // ❌ Type error!
 ```
 
-## Extending W3C Credentials
+### The Solution: CredentialKey Interface
 
-This library demonstrates how to extend W3C Verifiable Credentials while maintaining full compatibility. Here's how we achieved universal extensibility:
-
-### Split Architecture Pattern
+`@synet/credential` defines its own `CredentialKey` interface that acts as a **dependency moat**:
 
 ```typescript
-// 1. Universal Base Types (types-base.ts)
-export interface BaseCredentialSubject {
-  holder: { id: string; name?: string };
-  issuedBy?: { id: string; name?: string };
+// In @synet/credential/src/key.ts
+export interface CredentialKey {
+  readonly id: string;
+  readonly publicKeyHex: string;
+  readonly type: string;
+  readonly meta: Record<string, unknown>;
+  
+  canSign(): boolean;
+  getPublicKey(): string;
+  sign(data: string): Promise<string>;
+  verify(data: string, signature: string): Promise<boolean>;
+  toJSON(): object;
+  toVerificationMethod(controller: string): object;
 }
-
-export interface IdentitySubject extends BaseCredentialSubject {
-  // Universal identity properties
-}
-
-export const BaseCredentialType = {
-  Identity: "IdentityCredential",
-  Authorization: "AuthorizationCredential",
-  Asset: "DataAssetCredential",
-} as const;
-
-/** 
- * 2. Your specific extensions @see types-synet.ts
-*/
-
-export interface IpAssetSubject extends BaseCredentialSubject {
-  networkId: string;
-  ip: string;
-  subnet?: string;
-  gateway?: string;
-}
-
-export const SynetCredentialType = {
-  ...BaseCredentialType,  // Re-export base types
-  IpAsset: "IpAssetCredential",
-  GatewayIdentity: "GatewayIdentityCredential",
-} as const;
-
-// 3. Single Export Point (index.ts)
-export * from './types-base';      // Universal types
-export * from './types-synet';     // Synet-specific + base types
-export * from './credential-service';
 ```
 
-### Key Benefits
+### How It Works
 
-- **Universal Compatibility**: Base types work with any W3C system
-- **Stable Foundation**: Core types remain unchanged across versions
-- **Easy Extension**: Add new custom types without breaking existing code
-- **Single Dependency**: One library for everything
-- **Type Safety**: Full TypeScript support throughout
+1. **Credential functions only use the interface**:
 
-This pattern allows you to either use the universal base types or the extended Synet types, while maintaining complete W3C compatibility and enabling easy extension for your own use cases.
+   ```typescript
+   // Uses interface, not concrete type
+   export async function issueVC(
+     key: CredentialKey, // ← Interface, not @synet/keys Key
+     subject: BaseCredentialSubject,
+     type: string,
+     issuerDid: string
+   ): Promise<Result<W3CVerifiableCredential>>
+   ```
+2. **Any key provider can implement the interface**:
 
-## Extending with Custom Types
+   ```typescript
+   // @synet/keys Key implements CredentialKey
+   import { Key } from '@synet/keys';
+   const key = await Key.generate();
+   await issueVC(key, subject, type, issuerDid); // ✅ Works!
 
-The library is designed to be easily extensible. You can add your own credential types while maintaining full compatibility with the existing system:
+   // Custom key provider
+   class MyCustomKey implements CredentialKey {
+     // ... implement interface methods
+   }
+   const customKey = new MyCustomKey();
+   await issueVC(customKey, subject, type, issuerDid); // ✅ Also works!
+   ```
+3. **Version conflicts are prevented**:
+
+   ```typescript
+   // Different versions of @synet/keys both implement CredentialKey
+   import { Key as KeyV1 } from '@synet/keys@1.0.0';
+   import { Key as KeyV2 } from '@synet/keys@1.0.1';
+
+   const keyV1 = await KeyV1.generate();
+   const keyV2 = await KeyV2.generate();
+
+   // Both work with credential functions
+   await issueVC(keyV1, subject, type, issuerDid); // ✅ Works!
+   await issueVC(keyV2, subject, type, issuerDid); // ✅ Works!
+   ```
+
+### Example: Multiple Key Providers
 
 ```typescript
-// 1. Define your custom credential types
-const CustomCredentialTypes = {
-  Degree: "DegreeCredential",
-  Certificate: "CertificateCredential",
-  License: "LicenseCredential",
-  DeviceIdentity: "DeviceIdentityCredential",
-} as const;
-
-type CustomCredentialType = typeof CustomCredentialTypes[keyof typeof CustomCredentialTypes];
-
-// 2. Create union type with Synet types
-type MyCredentialType = SynetCredentialType | CustomCredentialType;
-
-// 3. Define custom credential subjects
-interface DegreeSubject extends BaseCredentialSubject {
-  degree: string;
-  major: string;
-  university: string;
-  graduationDate: string;
-  gpa?: number;
-}
-
-// 4. Issue credential using pure API
-import { generateKeyPair } from '@synet/keys';
-import { createDIDKey } from '@synet/did';
-import { generateKeyPair, Key } from '@synet/keys';
+import { Key as SynetKey } from '@synet/keys';
+import { VaultKey } from '@company/vault-keys';
+import { HSMKey } from '@company/hsm-keys';
 import { issueVC } from '@synet/credential';
 
-// Generate keys and create DID
-const keyPair = generateKeyPair('ed25519');
-const issuerDid = createDIDKey(keyPair.publicKey, 'Ed25519');
-const issuerKey = Key.fromKeyPair('ed25519', keyPair.publicKey, keyPair.privateKey, {
-  name: 'degree-issuer'
-});
+// All implement CredentialKey interface
+const synetKey = await SynetKey.generate();
+const vaultKey = new VaultKey(vaultConfig);
+const hsmKey = new HSMKey(hsmConfig);
 
-const result = await issueVC(
-  issuerKey,
-  degreeSubject,
-  CustomCredentialTypes.Degree,
-  issuerDid
-);
+// All work with credential functions
+await issueVC(synetKey, subject, type, issuerDid); // ✅
+await issueVC(vaultKey, subject, type, issuerDid); // ✅
+await issueVC(hsmKey, subject, type, issuerDid);   // ✅
 ```
 
-This approach allows you to:
-
-- Add new credential types without modifying the core library
-- Maintain type safety across your entire application
-- Mix custom types with built-in Synet types
-- Extend intelligence classifications similarly
-
-## Testing
-
-The library includes test utilities for easy testing:
-
-```typescript
-import { generateTestDirectKey, generateTestSignerKey, createDIDFromKey } from '@synet/credential/test/helpers';
-
-// Generate test keys
-const testKey = generateTestDirectKey('ed25519');
-const testDid = createDIDFromKey(testKey);
-
-// Use in your tests
-const result = await issueVC(
-  testKey,
-  subject,
-  'TestCredential',
-  testDid
-);
-```
-
-## Error Handling
-
-All operations return a `Result` type for predictable error handling:
-
-```typescript
-const result = await issueVC(issuerKey, subject, 'TestCredential', issuerDid);
-
-if (result.success) {
-  console.log('Success:', result.data);
-} else {
-  console.error('Error:', result.error);
-}
-```
-
-## Production Considerations
-
-1. **Key Management**: Use a secure key management system (HSM, cloud KMS, etc.)
-2. **DID Management**: Use proper DID creation with `@synet/did`
-3. **Validation**: Implement additional validation layers for your use case
-4. **Monitoring**: Add logging and monitoring for credential operations
-
-## Development
-
-```bash
-# Install dependencies
-npm install
-
-# Run tests
-npm test
-
-# Build
-npm run build
-
-# Lint
-npm run lint
-
-# Format
-npm run format
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-MIT License - see LICENSE file for details.
-
-Built with ❤️ by the Synet Team for a decentralized future.
-
-## Design Decisions
-
-### Signer Architecture Choice
-
-The library uses **flat composition** rather than dependency injection within keys:
-
-```typescript
-// ✅ Chosen approach: Flat composition
-const key = Key.createWithSigner('ed25519', 'pub_123', mySigner, {
-  name: 'vault-key'
-});
-
-// ❌ Alternative: Signer factory inside key
-const key = Key.createWithSignerFactory('ed25519', 'pub_123', {
-  createSigner: () => new VaultSigner(config),  // Create signer inside key
-});
-```
-
-**Why flat composition?**
-
-- **Dependency Moat**: Keys don't depend on signer implementations
-- **Composability**: Signers can be created independently and reused
-- **Testability**: Easy to mock signers for testing
-- **Flexibility**: Same signer can be used with multiple keys
-- **Separation of Concerns**: Key management and signing are separate responsibilities
-
-This design allows for maximum flexibility while maintaining clean boundaries between components.
+This pattern ensures that `@synet/credential` remains stable and compatible while allowing maximum flexibility in key management solutions.

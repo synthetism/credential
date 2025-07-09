@@ -89,6 +89,58 @@ function base64urlDecode(data: string): string {
 }
 
 /**
+ * Credential Key Interface - Abstract interface for keys used in credentials
+ * 
+ * This interface allows @synet/credential to work with any key implementation
+ * without depending on specific versions of @synet/keys or other key providers.
+ * 
+ * The @synet/keys Key unit implements this interface, but so can any other
+ * key implementation, maintaining dependency moat principles.
+ */
+export interface CredentialKey {
+  /** Unique identifier for this key */
+  readonly id: string;
+  
+  /** Public key material in hex format */
+  readonly publicKeyHex: string;
+  
+  /** Key type (ed25519, rsa, etc.) */
+  readonly type: string;
+  
+  /** Key metadata */
+  readonly meta: Record<string, unknown>;
+  
+  /** Check if this key can be used for signing */
+  canSign(): boolean;
+  
+  /** Get the public key for verification */
+  getPublicKey(): string;
+  
+  /** Sign data with this key */
+  sign(data: string): Promise<string>;
+  
+  /** Verify a signature against this key */
+  verify(data: string, signature: string): Promise<boolean>;
+  
+  /** Export key as JSON (excludes private key for security) */
+  toJSON(): {
+    id: string;
+    publicKeyHex: string;
+    type: string;
+    meta: Record<string, unknown>;
+    canSign: boolean;
+  };
+  
+  /** Convert this key to a verification method */
+  toVerificationMethod(controller: string): {
+    id: string;
+    type: string;
+    controller: string;
+    publicKeyHex: string;
+  };
+}
+
+/**
  * Signer interface for signing operations
  * This abstraction allows for vault/HSM implementations
  */
