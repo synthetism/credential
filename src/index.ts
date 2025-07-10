@@ -9,3 +9,6 @@ export * from "./credential";
 
 // Export utilities
 export * from "./utils";
+
+// Export Result pattern for credential operations
+export { Result, type VerificationResult } from "./result";

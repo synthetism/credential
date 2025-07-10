@@ -19,7 +19,7 @@ describe('CredentialUnit Basic Functionality', () => {
     // Create the signer -> key chain
     signer = await Signer.generate('ed25519', { name: 'test-signer' });
     key = signer.createKey();
-    credential = new CredentialUnit();
+    credential = CredentialUnit.create();
   });
 
   describe('Unit Creation and Basic Properties', () => {
@@ -52,8 +52,8 @@ describe('CredentialUnit Basic Functionality', () => {
         'did:example:issuer'
       );
 
-      expect(result).toBeNull();
-      expect(credential.error).toContain('Cannot issue credential: missing getPublicKey or sign capability');
+      expect(result.isFailure).toBe(true);
+      expect(result.errorMessage).toContain('Cannot issue credential: missing getPublicKey or sign capability');
     });
   });
 
@@ -99,16 +99,17 @@ describe('CredentialUnit Basic Functionality', () => {
         'did:example:university'
       );
 
-      expect(result).not.toBeNull();
-      if (result) {
-        expect(result['@context']).toContain('https://www.w3.org/2018/credentials/v1');
-        expect(result.type).toContain('VerifiableCredential');
-        expect(result.type).toContain('UniversityDegree');
-        expect(result.issuer.id).toBe('did:example:university');
-        expect(result.credentialSubject).toEqual(subject);
-        expect(result.proof).toBeDefined();
-        expect(result.proof.type).toBe('JwtProof2020');
-        expect(result.proof.jwt).toBeDefined();
+      expect(result.isSuccess).toBe(true);
+      if (result.isSuccess) {
+        const cred = result.value;
+        expect(cred['@context']).toContain('https://www.w3.org/2018/credentials/v1');
+        expect(cred.type).toContain('VerifiableCredential');
+        expect(cred.type).toContain('UniversityDegree');
+        expect(cred.issuer.id).toBe('did:example:university');
+        expect(cred.credentialSubject).toEqual(subject);
+        expect(cred.proof).toBeDefined();
+        expect(cred.proof.type).toBe('JwtProof2020');
+        expect(cred.proof.jwt).toBeDefined();
       }
     });
 
