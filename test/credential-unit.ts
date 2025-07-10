@@ -4,7 +4,6 @@
  * This demonstrates the integration pattern:
  * signer -> credential -> issue VC
  */
-
 import { CredentialUnit } from '../src/credential';
 
 async function testCredentialUnit() {

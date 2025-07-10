@@ -49,12 +49,18 @@ export class CredentialUnit extends Unit {
   private _audit: string[] = [];
   private _log: string[] = [];
 
-  constructor() {
+  private constructor() {
     super(createUnitSchema({
       id: 'credential',
       version: '1.0.0'
     }));
   }
+
+  static create():CredentialUnit {
+    // Initialize audit and log
+
+    return new CredentialUnit();
+  } 
 
   getAudit(): string[] {
     return this._audit;

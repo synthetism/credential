@@ -1,6 +1,6 @@
 {
   "name": "@synet/credential",
-  "version": "1.0.1",
+  "version": "1.0.2-dev.4",
   "description": "VC Credentials for Synet Identity",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -21,7 +21,7 @@
     "coverage": "vitest run --coverage",
     "lint": "biome lint ./src",
     "format": "biome format --write './src'",
-    "prepublishOnly": "npm run lint && npm run build",
+    "prepublishOnly": "npm run lint && npm run test && npm run build",
     "version:dev": "npm version --no-git-tag-version prerelease --preid=dev",
     "version:patch": "npm version --no-git-tag-version patch",
     "version:minor": "npm version --no-git-tag-version minor",

@@ -15,7 +15,7 @@ import type { BaseCredentialSubject, W3CVerifiableCredential } from '../src/type
 import * as crypto from 'node:crypto';
 
 // Import real-world test data
-import realWorldData from '../example-data/0en.json';
+import realWorldData from './example-data/0en.json';
 
 /**
  * Convert Ed25519 private key from hex to PEM format
