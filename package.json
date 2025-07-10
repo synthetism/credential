@@ -1,6 +1,6 @@
 {
   "name": "@synet/credential",
-  "version": "1.0.2-dev.4",
+  "version": "1.0.2-dev.5",
   "description": "VC Credentials for Synet Identity",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
