@@ -1,6 +1,6 @@
 /**
  * Minimal Result pattern for @synet/credential
- * 
+ *
  * API-compatible with @synet/patterns Result but self-contained.
  * Removes unused methods (map, flatMap, recover, ensure, combine).
  */

@@ -89,7 +89,7 @@ describe('CredentialUnit Real-World Data Tests', () => {
       throw new Error('Failed to create key from signer');
     }
     
-    credential = new CredentialUnit();
+    credential = CredentialUnit.create();
     
     // Learn crypto capabilities
     credential.learn([key.teach()]);
@@ -99,17 +99,17 @@ describe('CredentialUnit Real-World Data Tests', () => {
     it('should verify the existing Veramo credential', async () => {
       const result = await credential.verifyCredential(testData.existingCredential);
 
-      if (!result) {
-        console.log('Verification failed with error:', credential.error);
-        console.log('Stack:', credential.stack);
+      if (result.isFailure) {
+        console.log('Verification failed with error:', result.errorMessage);
       }
 
-      expect(result).not.toBeNull();
-      if (result) {
-        expect(result.verified).toBe(true);
-        expect(result.issuer).toBe(testData.did);
-        expect(result.subject).toBe(testData.did);
-        expect(result.issuanceDate).toBe('2025-07-09T11:43:25.000Z');
+      expect(result.isSuccess).toBe(true);
+      if (result.isSuccess) {
+        const verificationResult = result.value;
+        expect(verificationResult.verified).toBe(true);
+        expect(verificationResult.issuer).toBe(testData.did);
+        expect(verificationResult.subject).toBe(testData.did);
+        expect(verificationResult.issuanceDate).toBe('2025-07-09T11:43:25.000Z');
       }
     });
 
@@ -133,7 +133,10 @@ describe('CredentialUnit Real-World Data Tests', () => {
         
         // Verify using our unit
         const result = await credential.verifyCredential(testData.existingCredential);
-        expect(result?.verified).toBe(true);
+        expect(result.isSuccess).toBe(true);
+        if (result.isSuccess) {
+          expect(result.value.verified).toBe(true);
+        }
       }
     });
   });
@@ -147,7 +150,7 @@ describe('CredentialUnit Real-World Data Tests', () => {
       const originalIssuanceDate = testData.existingCredential.issuanceDate;
 
       // Issue new credential with same data
-      const newCredential = await credential.issueCredential(
+      const newCredentialResult = await credential.issueCredential(
         originalSubject,
         originalType,
         originalIssuer,
@@ -157,8 +160,9 @@ describe('CredentialUnit Real-World Data Tests', () => {
         }
       );
 
-      expect(newCredential).not.toBeNull();
-      if (newCredential) {
+      expect(newCredentialResult.isSuccess).toBe(true);
+      if (newCredentialResult.isSuccess) {
+        const newCredential = newCredentialResult.value;
         // Should have identical structure (except proof)
         expect(newCredential.id).toBe(testData.existingCredential.id);
         expect(newCredential.type).toEqual(testData.existingCredential.type);
@@ -174,7 +178,10 @@ describe('CredentialUnit Real-World Data Tests', () => {
         
         // But the new credential should verify
         const verifyResult = await credential.verifyCredential(newCredential);
-        expect(verifyResult?.verified).toBe(true);
+        expect(verifyResult.isSuccess).toBe(true);
+        if (verifyResult.isSuccess) {
+          expect(verifyResult.value.verified).toBe(true);
+        }
       }
     });
 
@@ -193,22 +200,26 @@ describe('CredentialUnit Real-World Data Tests', () => {
         testField: 'new credential data'
       };
 
-      const newCredential = await credential.issueCredential(
+      const newCredentialResult = await credential.issueCredential(
         subject,
         'IdentityCredential',
         testData.did
       );
 
-      expect(newCredential).not.toBeNull();
-      if (newCredential) {
+      expect(newCredentialResult.isSuccess).toBe(true);
+      if (newCredentialResult.isSuccess) {
+        const newCredential = newCredentialResult.value;
         expect(newCredential.issuer.id).toBe(testData.did);
         expect(newCredential.credentialSubject.holder.id).toBe(testData.did);
         expect(newCredential.credentialSubject.holder.name).toBe('0en');
         
         // Should verify with same key
         const verifyResult = await credential.verifyCredential(newCredential);
-        expect(verifyResult?.verified).toBe(true);
-        expect(verifyResult?.issuer).toBe(testData.did);
+        expect(verifyResult.isSuccess).toBe(true);
+        if (verifyResult.isSuccess) {
+          expect(verifyResult.value.verified).toBe(true);
+          expect(verifyResult.value.issuer).toBe(testData.did);
+        }
       }
     });
   });
@@ -247,14 +258,14 @@ describe('CredentialUnit Real-World Data Tests', () => {
         throw new Error('Failed to create wrong key');
       }
       
-      const wrongCredential = new CredentialUnit();
+      const wrongCredential = CredentialUnit.create();
       wrongCredential.learn([wrongKey.teach()]);
 
       // Try to verify the existing credential with wrong key
       const result = await wrongCredential.verifyCredential(testData.existingCredential);
       
-      expect(result).toBeNull();
-      expect(wrongCredential.error).toContain('Invalid signature');
+      expect(result.isFailure).toBe(true);
+      expect(result.errorMessage).toContain('Invalid signature');
     });
   });
 
@@ -271,14 +282,15 @@ describe('CredentialUnit Real-World Data Tests', () => {
         }
       };
 
-      const newCredential = await credential.issueCredential(
+      const newCredentialResult = await credential.issueCredential(
         subject,
         'IdentityCredential',
         testData.did
       );
 
-      expect(newCredential).not.toBeNull();
-      if (newCredential) {
+      expect(newCredentialResult.isSuccess).toBe(true);
+      if (newCredentialResult.isSuccess) {
+        const newCredential = newCredentialResult.value;
         // Should have same JWT structure as Veramo
         expect(newCredential.proof.type).toBe('JwtProof2020');
         expect(newCredential.proof.jwt).toBeDefined();
@@ -309,14 +321,15 @@ describe('CredentialUnit Real-World Data Tests', () => {
         }
       };
 
-      const newCredential = await credential.issueCredential(
+      const newCredentialResult = await credential.issueCredential(
         subject,
         ['IdentityCredential', 'TestCredential'],
         testData.did
       );
 
-      expect(newCredential).not.toBeNull();
-      if (newCredential) {
+      expect(newCredentialResult.isSuccess).toBe(true);
+      if (newCredentialResult.isSuccess) {
+        const newCredential = newCredentialResult.value;
         expect(newCredential['@context']).toEqual(['https://www.w3.org/2018/credentials/v1']);
         expect(newCredential.type).toEqual(['VerifiableCredential', 'IdentityCredential', 'TestCredential']);
       }

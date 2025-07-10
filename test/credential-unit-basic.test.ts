@@ -127,9 +127,10 @@ describe('CredentialUnit Basic Functionality', () => {
         'did:example:school'
       );
 
-      expect(result).not.toBeNull();
-      if (result) {
-        expect(result.type).toEqual(['VerifiableCredential', 'AlumniCredential', 'EducationCredential']);
+      expect(result.isSuccess).toBe(true);
+      if (result.isSuccess) {
+        const cred = result.value;
+        expect(cred.type).toEqual(['VerifiableCredential', 'AlumniCredential', 'EducationCredential']);
       }
     });
 
@@ -154,11 +155,12 @@ describe('CredentialUnit Basic Functionality', () => {
         options
       );
 
-      expect(result).not.toBeNull();
-      if (result) {
-        expect(result.id).toBe('custom:credential:id');
-        expect(result.expirationDate).toBe('2025-12-31T23:59:59Z');
-        expect(result.meta).toEqual({ institution: 'Test University' });
+      expect(result.isSuccess).toBe(true);
+      if (result.isSuccess) {
+        const cred = result.value;
+        expect(cred.id).toBe('custom:credential:id');
+        expect(cred.expirationDate).toBe('2025-12-31T23:59:59Z');
+        expect(cred.meta).toEqual({ institution: 'Test University' });
       }
     });
 
@@ -176,9 +178,10 @@ describe('CredentialUnit Basic Functionality', () => {
         'did:example:issuer'
       );
 
-      expect(result).not.toBeNull();
-      if (result) {
-        expect(result.id).toMatch(/^urn:synet:TestCredential:/);
+      expect(result.isSuccess).toBe(true);
+      if (result.isSuccess) {
+        const cred = result.value;
+        expect(cred.id).toMatch(/^urn:synet:TestCredential:/);
       }
     });
   });
@@ -196,21 +199,27 @@ describe('CredentialUnit Basic Functionality', () => {
         }
       };
 
-      issuedCredential = (await credential.issueCredential(
+      const result = await credential.issueCredential(
         subject,
         'TestCredential',
         'did:example:issuer'
-      ))!;
+      );
+
+      expect(result.isSuccess).toBe(true);
+      if (result.isSuccess) {
+        issuedCredential = result.value;
+      }
     });
 
     it('should verify a valid credential', async () => {
       const result = await credential.verifyCredential(issuedCredential);
 
-      expect(result).not.toBeNull();
-      if (result) {
-        expect(result.verified).toBe(true);
-        expect(result.issuer).toBe('did:example:issuer');
-        expect(result.subject).toBe('did:example:test');
+      expect(result.isSuccess).toBe(true);
+      if (result.isSuccess) {
+        const verificationResult = result.value;
+        expect(verificationResult.verified).toBe(true);
+        expect(verificationResult.issuer).toBe('did:example:issuer');
+        expect(verificationResult.subject).toBe('did:example:test');
       }
     });
 
@@ -229,17 +238,17 @@ describe('CredentialUnit Basic Functionality', () => {
 
       const result = await credential.verifyCredential(tamperedCredential);
 
-      expect(result).toBeNull();
-      expect(credential.error).toContain('JWT payload field "credentialSubject" does not match credential data');
+      expect(result.isFailure).toBe(true);
+      expect(result.errorMessage).toContain('JWT payload field "credentialSubject" does not match credential data');
     });
 
     it('should fail verification without crypto capabilities', async () => {
-      const freshCredential = new CredentialUnit();
+      const freshCredential = CredentialUnit.create();
       
       const result = await freshCredential.verifyCredential(issuedCredential);
 
-      expect(result).toBeNull();
-      expect(freshCredential.error).toContain('Missing getPublicKey or verify capability');
+      expect(result.isFailure).toBe(true);
+      expect(result.errorMessage).toContain('Missing getPublicKey or verify capability');
     });
   });
 
@@ -288,7 +297,7 @@ describe('CredentialUnit Basic Functionality', () => {
   });
 
   describe('Error Handling', () => {
-    it('should accumulate errors in stack', async () => {
+    it('should return Result with error for operations without capabilities', async () => {
       const subject: BaseCredentialSubject = {
         holder: {
           id: 'did:example:test',
@@ -296,18 +305,36 @@ describe('CredentialUnit Basic Functionality', () => {
         }
       };
 
-      // First failure
-      await credential.issueCredential(subject, 'TestCredential', 'did:example:issuer');
-      expect(credential.error).toBeDefined();
-      expect(credential.stack).toContain(credential.error);
+      // Test issueCredential failure
+      const issueResult = await credential.issueCredential(subject, 'TestCredential', 'did:example:issuer');
+      expect(issueResult.isFailure).toBe(true);
+      expect(issueResult.errorMessage).toContain('Cannot issue credential: missing getPublicKey or sign capability');
 
-      // Second failure (should add to stack)
-      await credential.verifyCredential({} as unknown as W3CVerifiableCredential);
-      const stack = credential.stack;
-      expect(stack?.length).toBeGreaterThan(1);
+      // Test verifyCredential failure with valid credential structure but no capabilities
+      const mockCredential: W3CVerifiableCredential = {
+        '@context': ['https://www.w3.org/2018/credentials/v1'],
+        id: 'urn:test:credential',
+        type: ['VerifiableCredential', 'TestCredential'],
+        issuer: { id: 'did:example:issuer' },
+        issuanceDate: new Date().toISOString(),
+        credentialSubject: {
+          holder: {
+            id: 'did:example:subject',
+            name: 'Test Subject'
+          }
+        },
+        proof: {
+          type: 'JwtProof2020',
+          jwt: 'fake.jwt.token'
+        }
+      };
+
+      const verifyResult = await credential.verifyCredential(mockCredential);
+      expect(verifyResult.isFailure).toBe(true);
+      expect(verifyResult.errorMessage).toContain('Missing getPublicKey or verify capability');
     });
 
-    it('should expose error and stack through teaching', () => {
+    it('should expose error and stack through teaching for backward compatibility', () => {
       const contract = credential.teach();
       
       expect(contract.capabilities.error).toBeDefined();
