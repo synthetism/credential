@@ -63,7 +63,7 @@ async function main() {
   
   const vc = await credential.issueCredential(subject, 'TestCredential', 'did:example:123');
   
-  if (vc && vc.isSuccess) {
+  if (vc?.isSuccess) {
     const credential_data = vc.value;
     console.log('✓ Issued credential');
     console.log('✓ JWT:', credential_data.proof.jwt);
@@ -94,7 +94,7 @@ async function main() {
     
     // Test verification
     const verifyResult = await credential.verifyCredential(credential_data);
-    if (verifyResult && verifyResult.isSuccess) {
+    if (verifyResult.isSuccess) {
       console.log('✓ Credential verification:', verifyResult.value.verified);
     } else {
       console.log('❌ Verification failed:', verifyResult?.errorMessage);
