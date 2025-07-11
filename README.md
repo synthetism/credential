@@ -1,6 +1,6 @@
-#  @synet/credential
+# @synet/credential
 
-```bash
+```
    _____                  _   
   / ____|                | |               
  | (___  _   _ _ __   ___| |_              
@@ -18,279 +18,274 @@
 version: 1.0.0  
 ```
 
-A universal library for issuing and verifying W3C-compatible verifiable credentials (VCs). Built with composability, extensibility, and minimalism in mind.
+**Production-ready W3C Verifiable Credentials** built on battle-tested @synet/keys. Issue, verify, and manage credentials with zero dependencies and full TypeScript support.
 
-## Features
+## Why @synet/credential?
 
-- ✅ **Pure Functions**: Composable, side-effect-free credential operations
-- ✅ **Key/Signer Architecture**: Clean separation between keys and signing operations
-- ✅ **Progressive Security**: From simple direct keys to enterprise vault/HSM integration
-- ✅ **Universal W3C Compatibility**: Works with any W3C-compatible credential system
-- ✅ **Type Safety**: Full TypeScript support with compile-time key type checking
-- ✅ **Zero Dependencies**: Self-contained with native Node.js crypto (SHA-3 for cuid2)
-- ✅ **Extensible**: Easy to extend for custom credential types and proof formats
-- ✅ **JWT Proof Support**: Industry-standard JWT proof format
-- ✅ **Testing Ready**: Comprehensive test suite and utilities
+✅ **W3C Standard Compatible** - Real verifiable credentials that work everywhere  
+✅ **Built on @synet/keys** - Inherits 211 tests, 87% coverage, zero dependencies  
+✅ **JWT Proof Format** - Industry-standard, widely supported  
+✅ **Type Safe** - Full TypeScript support with proper error handling  
+✅ **Simple & Powerful** - Clean functions + intelligent units that learn capabilities  
+✅ **Production Ready** - Used in real identity systems and credential workflows  
+
+**Supported**: Ed25519, RSA, secp256k1 keys • JWT proofs • W3C data model • Custom credential types
 
 ## Quick Start
 
+### Option 1: Direct Functions (Simple & Fast)
+
+Perfect for straightforward credential workflows:
+
 ```typescript
-import { generateKeyPair, Key } from '@synet/keys';
+import { generateKeyPair, Signer } from '@synet/keys';
 import { createDIDKey } from '@synet/did';
 import { issueVC, verifyVC } from '@synet/credential';
 
-// 1. Generate a secure key pair
+// 1. Generate issuer keys
 const keyPair = generateKeyPair('ed25519');
 
-// 2. Create a Key unit (secure, self-contained)
-const issuerKey = Key.fromKeyPair('ed25519', keyPair.publicKey, keyPair.privateKey, {
-  name: 'Issuer Key',
-  purpose: 'credential-signing'
-});
+// 2. Create signer from keys  
+const signer = Signer.create(
+  keyPair.privateKey,
+  keyPair.publicKey,
+  'ed25519',
+  { purpose: 'credential-issuing' }
+);
 
-// OR: Generate new key directly (recommended for new applications)
-// const issuerKey = Key.generate('ed25519', { name: 'Issuer Key' });
+// 3. Create proper DID
+const issuerDid = createDIDKey(keyPair.publicKey, 'ed25519');
 
-// 3. Create a proper DID from the key
-const issuerDid = createDIDKey(issuerKey.publicKeyHex, 'Ed25519');
-
-// 4. Create a credential subject
-const subject = {
-  holder: {
-    id: 'did:key:alice123',
-    name: 'Alice Smith',
+// 4. Issue a university degree credential
+const credential = await issueVC(
+  signer,
+  {
+    holder: {
+      id: 'did:key:alice123',
+      name: 'Alice Smith'
+    },
+    degree: 'Computer Science',
+    university: 'Tech University',
+    graduationYear: 2024
   },
-  issuedBy: {
-    id: issuerDid,
-    name: 'Synet Authority',
-  },
-};
-
-// 5. Issue a credential
-const result = await issueVC(
-  issuerKey,
-  subject,
-  'IdentityCredential',
+  'UniversityDegreeCredential',
   issuerDid
 );
 
-if (result.success) {
-  // 6. Verify the credential
-  const verification = await verifyVC(issuerKey, result.data);
-  console.log('Verified:', verification.success);
-}
-```
-
-## Key Unit Architecture
-
-The @synet/credential library works seamlessly with the **Key Unit Architecture** from `@synet/keys`. Each Key is a self-contained unit imported from `@synet/keys` that provides all necessary cryptographic operations.
-
-### Importing Keys
-
-```typescript
-import { generateKeyPair, Key } from '@synet/keys';
-import { issueVC, verifyVC } from '@synet/credential';
-```
-
-### Key Creation Patterns
-
-The Key unit (from `@synet/keys`) provides multiple creation patterns:
-
-```typescript
-// 1. Generate new key pair (recommended for new applications)
-const newKey = Key.generate('ed25519', { name: 'my-key' });
-
-// 2. Migration from existing key pairs
-const migratedKey = Key.fromKeyPair('ed25519', existingPub, existingPriv, {
-  name: 'legacy-key',
-  source: 'old-system'
-});
-
-// 3. Public-only key (verification only)
-const publicKey = Key.createPublic('ed25519', publicKeyHex, { name: 'verify-only' });
-
-// 4. External signer (vault/HSM)
-const vaultKey = Key.createWithSigner('ed25519', publicKeyHex, customSigner);
-```
-
-### Key Operations
-
-```typescript
-// Check capabilities
-console.log(key.canSign());        // true/false
-console.log(key.dna.capabilities);  // Available methods
-
-// Sign and verify
-const signature = await key.sign('data to sign');
-const isValid = await key.verify('data to sign', signature);
-
-// Transform keys
-const publicKey = key.toPublicKey();           // Create public-only copy
-const vm = key.toVerificationMethod('did:..'); // DID verification method
-const exported = key.toJSON();                 // Export (no private key)
-
-// Get help and information
-key.help();                        // Show all capabilities
-console.log(key.whoami);           // "Key Unit v1.0.0"
-```
-
-### Progressive Security Models
-
-The Key Unit architecture (from `@synet/keys`) supports multiple security models:
-
-#### 1. Generated Keys (Secure Default)
-
-```typescript
-import { Key } from '@synet/keys';
-
-// Generate new key pair internally (recommended)
-const key = Key.generate('ed25519', { name: 'secure-key' });
-// ✅ Private key generated internally and never exposed
-// ✅ Maximum security out of the box
-await key.sign(data);
-```
-
-#### 2. Migrated Keys (Legacy Support)
-
-```typescript
-import { generateKeyPair, Key } from '@synet/keys';
-
-// Option A: Generate then migrate (common pattern)
-const keyPair = generateKeyPair('ed25519');
-const key = Key.fromKeyPair('ed25519', keyPair.publicKey, keyPair.privateKey, {
-  name: 'migrated-key'
-});
-
-// Option B: Migrate existing keys
-const existingKey = Key.fromKeyPair('ed25519', existingPub, existingPriv, {
-  name: 'legacy-system-key',
-  source: 'legacy-system'
-});
-
-// Same security as generated keys once migrated
-await key.sign(data);
-```
-
-#### 3. Vault/HSM Keys (Enterprise)
-
-```typescript
-import { Key } from '@synet/keys';
-
-// For vault/HSM integration
-class VaultSigner implements ISigner {
-  async sign(data: string): Promise<string> {
-    // Call vault/HSM for signing
-    return await this.vault.sign(data);
-  }
+if (credential.success) {
+  console.log('✅ Credential issued:', credential.data.id);
   
-  getPublicKey(): string {
-    return this.publicKey;
-  }
+  // 5. Verify the credential
+  const verification = await verifyVC(signer, credential.data);
+  console.log('✅ Verified:', verification.success);
+} else {
+  console.error('❌ Failed:', credential.error);
 }
-
-const key = Key.createWithSigner('ed25519', vaultPublicKey, new VaultSigner(), {
-  name: 'vault-key'
-});
-
-// Secure signing without exposing private key
-await key.sign(data);
 ```
 
-#### 4. Public Keys (Verification Only)
+### Option 2: Credential (Advanced Learning)
+
+For complex systems where units need to learn capabilities:
 
 ```typescript
-import { Key } from '@synet/keys';
+import { generateKeyPair, Signer } from '@synet/keys';
+import { Credential } from '@synet/credential';
 
-const publicKey = Key.createPublic('ed25519', publicKeyHex, { name: 'verify-only' });
+// 1. Create issuer signer
+const keyPair = generateKeyPair('ed25519');
+const issuerSigner = Signer.create(keyPair.privateKey, keyPair.publicKey, 'ed25519');
 
-// Only verification, no signing
-await publicKey.verify(data, signature);
-console.log(publicKey.canSign()); // false
-```
+// 2. Create credential unit
+const credential = Credential.create();
 
-### Type Safety
+// 3. Unit learns from signer (no private key transfer!)
+const key = issuerSigner.createKey();
+const capabilities = key.teach();
+await credential.learn([capabilities]);
 
-The architecture provides compile-time type safety:
-
-```typescript
-// Type guards
-function isDirectKey(key: Key): key is DirectKey;
-function isSignerKey(key: Key): key is SignerKey;
-function isPublicKey(key: Key): key is PublicKey;
-
-### DID Creation Flow
-
-**Important**: The Key Unit does not create DIDs directly. Use the proper flow with `@synet/did`:
-
-```typescript
-import { generateKeyPair, Key } from '@synet/keys';
-import { createDIDKey } from '@synet/did';
-import { issueVC } from '@synet/credential';
-
-// 1. Generate or migrate key
-const key = Key.generate('ed25519', { name: 'issuer-key' });
-// OR: const key = Key.fromKeyPair('ed25519', existingPub, existingPriv);
-
-// 2. Create proper DID from the key
-const issuerDid = createDIDKey(key.publicKeyHex, 'Ed25519');
-
-// 3. Issue credential with proper DID
-const result = await issueVC(
-  key,
-  subject,
-  'IdentityCredential',
-  issuerDid  // Required: proper DID from @synet/did
+// 4. Now the unit can issue credentials autonomously
+const credentialResult = await credential.issueCredential(
+  {
+    holder: { id: 'did:key:alice', name: 'Alice' },
+    certification: 'Blockchain Developer',
+    level: 'Advanced'
+  },
+  'CertificationCredential',
+  issuerDid
 );
+
+console.log('🎓 Credential:', credential?.id);
 ```
 
-### Key Unit Benefits
+**When to use each:**
+- **Option 1**: Simple apps, document signing, quick prototypes
+- **Option 2**: Complex identity systems, distributed workflows, enterprise apps
 
-The Key Unit architecture (from `@synet/keys`) provides:
+## Real-World Examples
 
-1. **🛡️ Security**: Private keys generated internally and never exposed
-2. **📖 Self-Documenting**: Built-in help and capability discovery (`key.help()`)
-3. **🔄 Migration Support**: Easy migration from existing systems (`Key.fromKeyPair()`)
-4. **🏢 Enterprise Ready**: Vault/HSM support through external signers
-5. **🧩 Composable**: Works seamlessly with credential operations
-6. **🔒 Type Safe**: Full TypeScript support with progressive security
-7. **🎯 Pure Operations**: No side effects, clean separation of concerns
-
-### Pure Function API
-
-The core credential functions are pure and composable, working with Key units from `@synet/keys`:
+### University Degree Credential
 
 ```typescript
-import { Key } from '@synet/keys';
+import { generateKeyPair, Signer } from '@synet/keys';
+import { createDIDKey } from '@synet/did';
 import { issueVC, verifyVC } from '@synet/credential';
 
-// Issue a verifiable credential
-async function issueVC<S extends BaseCredentialSubject>(
-  key: Key,                    // The signing key unit from @synet/keys
-  subject: S,                  // Credential subject
-  type: string | string[],     // Credential type(s)
-  issuerDid: string,           // Required issuer DID (use @synet/did)
-  options?: CredentialIssueOptions
-): Promise<Result<W3CVerifiableCredential<S>>>
+// University issuer setup
+const universityKeys = generateKeyPair('ed25519');
+const universitySigner = Signer.create(
+  universityKeys.privateKey,
+  universityKeys.publicKey,
+  'ed25519'
+);
+const universityDid = createDIDKey(universityKeys.publicKey, 'ed25519');
 
-// Verify a verifiable credential
-async function verifyVC(
-  verificationKey: Key,        // The verification key unit from @synet/keys
-  credential: W3CVerifiableCredential,
-  options?: CredentialVerifyOptions
-): Promise<Result<VerificationResult>>
+// Issue degree credential
+const degreeCredential = await issueVC(
+  universitySigner,
+  {
+    holder: {
+      id: 'did:key:student123',
+      name: 'Alice Johnson'
+    },
+    degree: 'Master of Computer Science',
+    university: 'Tech University',
+    graduationDate: '2024-06-15',
+    gpa: 3.85,
+    honors: 'Magna Cum Laude'
+  },
+  'UniversityDegreeCredential',
+  universityDid
+);
+
+console.log('🎓 Degree issued:', degreeCredential.data?.id);
 ```
 
-### DID Creation Flow
-
-**Important**: The Key Unit does not create DIDs directly. Use the proper flow with `@synet/did`:
+### Employment Verification
 
 ```typescript
-import { generateKeyPair } from '@synet/keys';
-import { createDIDKey } from '@synet/did';
-import { Key, issueVC } from '@synet/credential';
+// Employer issuer setup
+const employerKeys = generateKeyPair('ed25519');
+const employerSigner = Signer.create(
+  employerKeys.privateKey,
+  employerKeys.publicKey,
+  'ed25519'
+);
+const employerDid = createDIDKey(employerKeys.publicKey, 'ed25519');
 
-// 1. Generate cryptographic key pair
-const keyPair = generateKeyPair('ed25519');
+// Issue employment credential
+const employmentCredential = await issueVC(
+  employerSigner,
+  {
+    employee: {
+      id: 'did:key:employee456',
+      name: 'Bob Smith'
+    },
+    employer: {
+      name: 'Tech Corp Inc.',
+      id: employerDid
+    },
+    position: 'Senior Software Engineer',
+    startDate: '2022-03-01',
+    endDate: '2024-07-31',
+    salary: '$95,000',
+    status: 'Good Standing'
+  },
+  'EmploymentCredential',
+  employerDid
+);
+
+console.log('💼 Employment verified:', employmentCredential.data?.id);
+```
+
+### Multi-Party Verification Workflow
+
+```typescript
+// University verifies the degree credential
+const degreeVerification = await verifyVC(universitySigner, degreeCredential.data);
+
+// Employer verifies the employment credential  
+const employmentVerification = await verifyVC(employerSigner, employmentCredential.data);
+
+// Third party (bank) verifies both credentials
+const bankKeys = generateKeyPair('ed25519');
+const bankSigner = Signer.create(bankKeys.privateKey, bankKeys.publicKey, 'ed25519');
+
+// Bank can verify without being the issuer
+const bankVerifyDegree = await verifyVC(bankSigner, degreeCredential.data);
+const bankVerifyEmployment = await verifyVC(bankSigner, employmentCredential.data);
+
+console.log('🏦 Bank verification results:');
+console.log('   Degree valid:', bankVerifyDegree.success);
+console.log('   Employment valid:', bankVerifyEmployment.success);
+```
+
+## Core Functions
+
+Battle-tested functions for credential operations:
+
+### Credential Issuance
+
+```typescript
+import { issueVC, createCredentialSubject } from '@synet/credential';
+
+// Issue a credential
+const result = await issueVC(
+  signer,                    // Signer from @synet/keys
+  credentialSubject,         // Your credential data
+  'CredentialType',          // W3C credential type
+  issuerDid                  // DID of the issuer
+);
+
+// Create properly structured credential subject
+const subject = createCredentialSubject({
+  holder: { id: 'did:key:alice', name: 'Alice' },
+  university: 'Tech University',
+  degree: 'Computer Science'
+});
+```
+
+### Credential Verification
+
+```typescript
+import { verifyVC, validateCredentialStructure } from '@synet/credential';
+
+// Verify credential signature and integrity
+const verification = await verifyVC(signer, credential);
+
+if (verification.success) {
+  console.log('✅ Valid credential');
+  console.log('Issuer:', verification.data.issuer);
+  console.log('Subject:', verification.data.subject);
+} else {
+  console.error('❌ Invalid:', verification.error);
+}
+
+// Validate W3C structure only (no signature verification)
+const structureValid = validateCredentialStructure(credential);
+```
+
+### Credential Utilities
+
+```typescript
+import { 
+  extractCredentialData, 
+  getCredentialType, 
+  isExpired,
+  createCredentialId 
+} from '@synet/credential';
+
+// Extract data from credential
+const data = extractCredentialData(credential);
+
+// Get credential type
+const type = getCredentialType(credential); // 'UniversityDegreeCredential'
+
+// Check if expired
+const expired = isExpired(credential);
+
+// Generate unique credential ID
+const credentialId = createCredentialId('IdentityCredential');
+```
 
 // 2. Create proper DID from the key
 const issuerDid = createDIDKey(keyPair.publicKey, 'Ed25519');
@@ -302,267 +297,237 @@ const issuerKey = Key.fromKeyPair('ed25519', keyPair.publicKey, keyPair.privateK
 
 // 4. Issue credential with proper DID
 const result = await issueVC(
-  issuerKey,
-  subject,
-  'IdentityCredential',
-  issuerDid  // Required: proper DID from @synet/did
+  ## Credential (Advanced)
+
+For complex systems, use the intelligent Credential that learns capabilities:
+
+### Basic Credential Usage
+
+```typescript
+import { Credential } from '@synet/credential';
+import { generateKeyPair, Signer } from '@synet/keys';
+
+// 1. Create credential unit
+const credential = Credential.create();
+
+// 2. Create signer
+const keyPair = generateKeyPair('ed25519');
+const signer = Signer.create(keyPair.privateKey, keyPair.publicKey, 'ed25519');
+
+// 3. Unit learns from signer (no private key transfer!)
+const key = signer.createKey();
+const capabilities = key.teach();
+await credential.learn([capabilities]);
+
+// 4. Now the unit can operate autonomously
+const credentialResult = await credential.issueCredential(
+  credentialSubject,
+  'CertificationCredential',
+  issuerDid
 );
 ```
 
-This ensures proper DID standards compliance and avoids confusion between raw keys and proper DIDs.
+### Credential API
 
-### Key Unit Architecture Benefits
-
-1. **No Manager Abstractions**: No need for KeyManager, SignerManager, etc.
-2. **Self-Contained**: Each key knows its own capabilities
-3. **Composable**: Pure functions with key units as parameters
-4. **Type Safe**: Compile-time verification of key capabilities
-5. **Progressive**: From simple to enterprise security models
-6. **Testable**: Easy to mock and test individual units
-7. **Extensible**: Easy to add new key types and signers
+```typescript
+class Credential {
+  // Creation
+  static create(): Credential
+  
+  // Learning capabilities
+  learn(capabilities: TeachingCapabilities[]): Promise<boolean>
+  
+  // Operations (after learning)
+  async issueCredential(subject: any, type: string, issuerDid: string): Promise<SynetVerifiableCredential | null>
+  async verifyCredential(credential: any): Promise<VerificationResult | null>
+  validateStructure(credential: any): boolean
+  
+  // Unit interface
+  async execute(command: string, params?: any): Promise<Result<any>>
+  capabilities(): string[]
+  whoami(): string
+}
+```
 
 ## API Reference
 
-### Pure Functions
-
-The core API consists of pure, composable functions:
+### Core Functions
 
 ```typescript
-// Issue a verifiable credential
-async function issueVC<S extends BaseCredentialSubject>(
-  key: Key,
-  subject: S,
-  type: string | string[],
-  issuerDid?: string,
-  options?: CredentialIssueOptions
-): Promise<Result<W3CVerifiableCredential<S>>>
+// Issue verifiable credential
+issueVC(
+  signer: Signer,              // From @synet/keys
+  subject: BaseCredentialSubject,
+  type: string,
+  issuerDid: string
+): Promise<Result<SynetVerifiableCredential>>
 
-// Verify a verifiable credential
-async function verifyVC(
-  verificationKey: Key,
-  credential: W3CVerifiableCredential,
-  options?: CredentialVerifyOptions
+// Verify verifiable credential  
+verifyVC(
+  signer: Signer,              // From @synet/keys
+  credential: SynetVerifiableCredential
 ): Promise<Result<VerificationResult>>
+
+// Validate credential structure
+validateCredentialStructure(
+  credential: any
+): boolean
+
+// Create credential subject
+createCredentialSubject(
+  data: Record<string, any>
+): BaseCredentialSubject
 ```
 
-### Key Classes
+### Types
 
 ```typescript
-// Direct Key - simple use case with private key material
-const directKey = KeyUtils.generateKeyPair();
-console.log(directKey.canSign()); // true
-
-// Signer Key - enterprise use case with external signer
-const signerKey = KeyUtils.generateSignerKey();
-console.log(signerKey.canSign()); // true
-
-// Public Key - verification only
-const publicKey = directKey.toPublicKey();
-console.log(publicKey.canSign()); // false
-```
-
-### Key Types
-
-The library provides type-safe key operations:
-
-```typescript
-import { Key, isDirectKey, isSignerKey, isPublicKey } from '@synet/credential';
-
-// Type guards for compile-time safety
-if (isDirectKey(key)) {
-  // key.privateKeyHex is available
-  console.log('Private key available');
+interface SynetVerifiableCredential<T = BaseCredentialSubject> {
+  '@context': string[];
+  id: string;
+  type: string[];
+  issuer: { id: string };
+  issuanceDate: string;
+  expirationDate?: string;
+  credentialSubject: T;
+  proof: {
+    type: 'JwtProof2020';
+    jwt: string;
+    verificationMethod: string;
+  };
 }
 
-if (isSignerKey(key)) {
-  // key.signer is available
-  console.log('External signer available');
+interface VerificationResult {
+  verified: boolean;
+  issuer: string;
+  subject: string;
+  issuanceDate: string;
+  expirationDate?: string;
 }
 
-if (isPublicKey(key)) {
-  // Verification only
-  console.log('Public key only');
+interface BaseCredentialSubject {
+  holder: {
+    id: string;
+    name?: string;
+  };
+  [key: string]: any;
 }
 ```
-
-### Progressive Security
-
-The architecture supports multiple security models:
-
-```typescript
-// 1. Generate - Secure key generation (recommended)
-const newKey = Key.generate('ed25519', { name: 'simple-key' });
-
-// 2. Migrate - From existing key pairs
-const migratedKey = Key.fromKeyPair('ed25519', 'pub_123', 'priv_123', { 
-  name: 'migrated-key' 
-});
-
-// 3. Vault - Key with external signer (vault/HSM)
-const vaultKey = Key.createWithSigner('ed25519', 'pub_456', new VaultSigner(vaultConfig), {
-  name: 'vault-key'
-});
-
-// 4. Verification - Public key only
-const publicKey = Key.createPublic('ed25519', 'pub_789', { name: 'verify-only' });
-```
-
-### Credential Utilities
-
-Helper functions for common credential operations:
-
-```typescript
-import { CredentialUtils } from '@synet/credential';
-
-// Check if credential is expired
-const isExpired = CredentialUtils.isExpired(credential);
-
-// Get credential age
-const age = CredentialUtils.getCredentialAge(credential);
-
-// Get credential types (excluding VerifiableCredential)
-const types = CredentialUtils.getCredentialTypes(credential);
-
-// Check if credential has specific type
-const hasType = CredentialUtils.hasType(credential, 'IdentityCredential');
-
-// Get primary type
-const primaryType = CredentialUtils.getPrimaryType(credential);
-```
-
-## Architecture
-
-### 1. **Base Types** (`types-base.ts`)
-
-Universal, stable, reusable types that work with any W3C-compatible system:
-
-- `IdentitySubject`, `AuthorizationSubject`, `AssetSubject`
-- `GovernanceSubject`, `DeclarationSubject`
-- `BaseCredentialType` enum
-- `Intelligence` classification
-
-### 2. **Key/Signer Model** (`key.ts`)
-
-Clean separation between keys and signing operations:
-
-- `Key` class with multiple creation patterns
-- `Signer` interface for external signing
-- Type-safe key operations with compile-time checking
-- Progressive security from simple to enterprise
-
-### 3. **Pure Functions** (`credential.ts`)
-
-Composable, side-effect-free credential operations:
-
-- `issueVC()` - Issue verifiable credentials
-- `verifyVC()` - Verify verifiable credentials
-- `validateCredential()` - Validate credential structure
-- `extractMetadata()` - Extract credential metadata
-
-### 4. **Extendable W3C Credentials**
-
-You can extend W3C Verifiable Credentials and create custom Subject or extend BaseSubject, while maintaining full compatibility, without breaking change ever happen.
-
-### 5. **Benefits**
-
-- **Universality**: Base types work with any system
-- **Stability**: Core types remain stable across updates
-- **Extensibility**: Easy to add new credential types
-- **Composability**: Pure functions enable complex workflows
-- **Security**: Progressive security model from simple to enterprise
-- **Type Safety**: Compile-time key type checking
-- **Synet Innovation**: Concrete implementations for Synet ecosystem
-- **Single Dependency**: One library for everything
 
 ## Installation
 
 ```bash
-npm install @synet/credential
+npm install @synet/credential @synet/keys @synet/did
 ```
 
-## Usage Options
+The package requires `@synet/keys` for cryptographic operations and `@synet/did` for proper DID creation.
 
-### Option 1: Universal (Base Types Only)
+## Error Handling
+
+All functions return `Result<T>` for type-safe error handling:
 
 ```typescript
-import { 
-  W3CVerifiableCredential, 
-  IdentitySubject, 
-  BaseCredentialType 
-} from '@synet/credential/types-base';
+import { issueVC } from '@synet/credential';
 
-// Use stable, universal types
-const credential: W3CVerifiableCredential<IdentitySubject> = {
-  // ... W3C-compatible credential
+const result = await issueVC(signer, subject, 'TestCredential', issuerDid);
+
+if (result.isSuccess()) {
+  const credential = result.getData();
+  console.log('✅ Credential issued:', credential.id);
+} else {
+  const error = result.getError();
+  console.error('❌ Failed to issue:', error.message);
+}
+```
+
+## Common Patterns
+
+### Multiple Credentials
+
+```typescript
+// Issue multiple credentials for a single holder
+const credentials = await Promise.all([
+  issueVC(signer, degreeSubject, 'UniversityDegreeCredential', universityDid),
+  issueVC(signer, employmentSubject, 'EmploymentCredential', employerDid),
+  issueVC(signer, certificationSubject, 'CertificationCredential', certifierDid)
+]);
+
+console.log(`Issued ${credentials.length} credentials`);
+```
+
+### Credential Chain Verification
+
+```typescript
+// Verify a chain of related credentials
+const verifyCredentialChain = async (credentials: SynetVerifiableCredential[]) => {
+  const results = await Promise.all(
+    credentials.map(cred => verifyVC(signer, cred))
+  );
+  
+  return results.every(result => result.isSuccess());
 };
 ```
 
-### Option 2: Synet Ecosystem (Advanced, network related)
+### Custom Credential Types
 
 ```typescript
-import { 
-  SynetVerifiableCredential, 
-  IpAssetSubject, 
-  SynetCredentialType 
-} from '@synet/credential';
-
-// Use Synet-specific types + all base types
-const ipCredential: SynetVerifiableCredential<IpAssetSubject> = {
-  credentialSubject: {
-    holder: { id: 'did:key:holder123' },
-    issuedBy: { id: 'did:key:issuer123' },
-    networkId: 'synet-main',
-    ip: '10.0.0.1',
-  },
-  // ... other W3C properties
-};
-```
-
-### Option 3: Custom Extension
-
-```typescript
-import { 
-  BaseCredentialSubject, 
-  W3CVerifiableCredential 
-} from '@synet/credential/types-base';
-
-// Extend base types for your needs
-interface MyCustomSubject extends BaseCredentialSubject {
-  customField: string;
-  myData: Record<string, unknown>;
+interface SkillCredentialSubject extends BaseCredentialSubject {
+  skill: string;
+  level: 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert';
+  endorsedBy: string;
+  validUntil?: string;
 }
 
-const MyCredentialTypes = {
-  Custom: "MyCustomCredential",
-} as const;
+const skillCredential = await issueVC(
+  signer,
+  {
+    holder: { id: 'did:key:dev123', name: 'Jane Developer' },
+    skill: 'TypeScript',
+    level: 'Expert',
+    endorsedBy: 'Senior Tech Lead'
+  } as SkillCredentialSubject,
+  'SkillCredential',
+  organizationDid
+);
 ```
 
-## Core API
+## Testing
 
-The @synet/credential library provides a pure functional API for credential operations with Key units from `@synet/keys`:
-
-### Key Management
+The architecture makes testing simple with predictable pure functions:
 
 ```typescript
-import { generateKeyPair, Key } from '@synet/keys';
+import { issueVC, verifyVC } from '@synet/credential';
+import { generateKeyPair, Signer } from '@synet/keys';
 
-// Generate new key (recommended)
-const newKey = Key.generate('ed25519', { name: 'credential-key' });
+describe('Credential Tests', () => {
+  let signer: Signer;
+  let issuerDid: string;
 
-// OR: Generate raw key pair then migrate
-const keyPair = generateKeyPair('ed25519');
-const migratedKey = Key.fromKeyPair('ed25519', keyPair.publicKey, keyPair.privateKey, {
-  name: 'migrated-key'
+  beforeEach(() => {
+    const keyPair = generateKeyPair('ed25519');
+    signer = Signer.create(keyPair.privateKey, keyPair.publicKey, 'ed25519');
+    issuerDid = `did:key:${keyPair.publicKey}`;
+  });
+
+  test('should issue and verify credential', async () => {
+    const subject = {
+      holder: { id: 'did:key:test', name: 'Test User' },
+      test: true
+    };
+
+    const issueResult = await issueVC(signer, subject, 'TestCredential', issuerDid);
+    expect(issueResult.isSuccess()).toBe(true);
+
+    const credential = issueResult.getData();
+    const verifyResult = await verifyVC(signer, credential);
+    expect(verifyResult.isSuccess()).toBe(true);
+  });
 });
-
-// Create public-only key for verification
-const publicKey = migratedKey.toPublicKey();
 ```
 
-### DID Creation
+---
 
-```typescript
-import { createDIDKey } from '@synet/did';
+Built on [@synet/keys](../keys) • Part of the [Synet](/) ecosystem
 
 // Create proper standards-compliant DID from Key unit
 const issuerDid = createDIDKey(key.publicKeyHex, 'Ed25519');

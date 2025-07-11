@@ -1,5 +1,5 @@
 /**
- * Basic tests for CredentialUnit using @synet/keys integration
+ * Basic tests for Credential using @synet/keys integration
  * 
  * These are integration tests since credentials cannot exist without cryptographic keys.
  * We use the signer -> key chain from @synet/keys to test the full credential lifecycle.
@@ -7,25 +7,25 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Signer } from '@synet/keys';
-import { CredentialUnit } from '../src/credential';
+import { Credential } from '../src/credential';
 import type { BaseCredentialSubject, W3CVerifiableCredential } from '../src/types-base';
 
-describe('CredentialUnit Basic Functionality', () => {
+describe('Credential Basic Functionality', () => {
   let signer: Awaited<ReturnType<typeof Signer.generate>>;
   let key: ReturnType<typeof signer.createKey>;
-  let credential: CredentialUnit;
+  let credential: Credential;
 
   beforeEach(async () => {
     // Create the signer -> key chain
     signer = await Signer.generate('ed25519', { name: 'test-signer' });
     key = signer.createKey();
-    credential = CredentialUnit.create();
+    credential = Credential.create();
   });
 
   describe('Unit Creation and Basic Properties', () => {
     it('should create credential unit successfully', () => {
       expect(credential).toBeDefined();
-      expect(credential.whoami()).toContain('CredentialUnit');
+      expect(credential.whoami()).toContain('Credential');
       expect(credential.dna.id).toBe('credential');
       expect(credential.dna.version).toBe('1.0.0');
     });
@@ -243,7 +243,7 @@ describe('CredentialUnit Basic Functionality', () => {
     });
 
     it('should fail verification without crypto capabilities', async () => {
-      const freshCredential = CredentialUnit.create();
+      const freshCredential = Credential.create();
       
       const result = await freshCredential.verifyCredential(issuedCredential);
 
@@ -334,13 +334,7 @@ describe('CredentialUnit Basic Functionality', () => {
       expect(verifyResult.errorMessage).toContain('Missing getPublicKey or verify capability');
     });
 
-    it('should expose error and stack through teaching for backward compatibility', () => {
-      const contract = credential.teach();
-      
-      expect(contract.capabilities.error).toBeDefined();
-      expect(contract.capabilities.stack).toBeDefined();
-      expect(typeof contract.capabilities.error()).toBe('string');
-    });
+  
   });
 
   describe('Teaching Capabilities', () => {
@@ -355,8 +349,7 @@ describe('CredentialUnit Basic Functionality', () => {
       expect(contract.capabilities.issueCredential).toBeDefined();
       expect(contract.capabilities.verifyCredential).toBeDefined();
       expect(contract.capabilities.validateStructure).toBeDefined();
-      expect(contract.capabilities.error).toBeDefined();
-      expect(contract.capabilities.stack).toBeDefined();
+
     });
 
     it('should allow other units to learn credential operations', () => {

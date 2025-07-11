@@ -3,7 +3,7 @@
  */
 
 import { Signer } from '@synet/keys';
-import { CredentialUnit } from '../src/credential';
+import { Credential } from '../src/credential';
 
 async function main() {
   // Create a signer
@@ -51,7 +51,7 @@ async function main() {
   console.log('✓ Signature verification:', isValid);
   
   // Test with credential unit
-  const credential = new CredentialUnit();
+  const credential = Credential.create();
   credential.learn([key.teach()]);
   
   const subject = {
@@ -63,12 +63,13 @@ async function main() {
   
   const vc = await credential.issueCredential(subject, 'TestCredential', 'did:example:123');
   
-  if (vc) {
+  if (vc && vc.isSuccess) {
+    const credential_data = vc.value;
     console.log('✓ Issued credential');
-    console.log('✓ JWT:', vc.proof.jwt);
+    console.log('✓ JWT:', credential_data.proof.jwt);
     
     // Check JWT signature part
-    const jwt = vc.proof.jwt;
+    const jwt = credential_data.proof.jwt;
     if (!jwt) {
       console.log('❌ No JWT in credential');
       return;
@@ -92,10 +93,14 @@ async function main() {
     }
     
     // Test verification
-    const verifyResult = await credential.verifyCredential(vc);
-    console.log('✓ Credential verification:', verifyResult?.verified);
+    const verifyResult = await credential.verifyCredential(credential_data);
+    if (verifyResult && verifyResult.isSuccess) {
+      console.log('✓ Credential verification:', verifyResult.value.verified);
+    } else {
+      console.log('❌ Verification failed:', verifyResult?.errorMessage);
+    }
   } else {
-    console.log('❌ Failed to issue credential');
+    console.log('❌ Failed to issue credential:', vc?.errorMessage);
   }
 }
 

@@ -15,7 +15,7 @@
  * Usage pattern:
  * ```typescript
  * const signer = new Signer();
- * const credential = new CredentialUnit();
+ * const credential = new Credential();
  *
  * // Learn crypto capabilities
  * credential.learn([signer.teach()]);
@@ -41,10 +41,10 @@ import type {
 const DEFAULT_CONTEXT = ["https://www.w3.org/2018/credentials/v1"];
 
 // ==========================================
-// CREDENTIAL UNIT IMPLEMENTATION
+// CREDENTIAL IMPLEMENTATION
 // ==========================================
 
-export class CredentialUnit extends Unit {
+export class Credential extends Unit {
   private _audit: string[] = [];
   private _log: string[] = [];
 
@@ -57,10 +57,10 @@ export class CredentialUnit extends Unit {
     );
   }
 
-  static create(): CredentialUnit {
+  static create(): Credential {
     // Initialize audit and log
 
-    return new CredentialUnit();
+    return new Credential();
   }
 
   getAudit(): string[] {
@@ -80,7 +80,7 @@ export class CredentialUnit extends Unit {
   }
 
   whoami(): string {
-    return `CredentialUnit@${this.dna.id} - W3C Verifiable Credential operations`;
+    return `Credential@${this.dna.id} - W3C Verifiable Credential operations`;
   }
 
   capabilities(): string[] {
@@ -89,7 +89,7 @@ export class CredentialUnit extends Unit {
 
   help(): void {
     console.log(`
-🎓 CredentialUnit - W3C Verifiable Credential Operations
+🎓 Credential - W3C Verifiable Credential Operations
 
 Native Methods:
 - issueCredential(subject, type, issuerDid, options?): Create W3C Verifiable Credentials
@@ -100,14 +100,14 @@ Required Learning:
 - Learn from @synet/keys Key unit to get: getPublicKey, sign, verify
 
 Usage Pattern:
-1. Create unit: const credential = new CredentialUnit()
+1. Create unit: const credential = new Credential()
 2. Learn from key: credential.learn([key.teach()])
 3. Issue VC: await credential.issueCredential(subject, type, issuer)
 
 Example:
 const signer = Signer.generate('ed25519');
 const key = signer.createKey();
-const credential = new CredentialUnit();
+const credential = new Credential();
 credential.learn([key.teach()]);
 const result = await credential.issueCredential(
   { id: 'did:example:123', name: 'Alice' },
@@ -136,8 +136,6 @@ const result = await credential.issueCredential(
         validateStructure: (...args: unknown[]) =>
           this.validateStructure(args[0] as W3CVerifiableCredential),
         // Deprecated methods for backwards compatibility
-        error: () => this.error || "",
-        stack: () => this.stack || [],
       },
     };
   }
@@ -498,8 +496,8 @@ const result = await credential.issueCredential(
         // Learn key capabilities that we need for credential operations
         if (cap === "getPublicKey" || cap === "sign" || cap === "verify") {
           this._addCapability(cap, impl);
-          console.log(
-            `📚 CredentialUnit learned: ${cap} from ${contract.unitId}`,
+          console.debug(
+            `📚 Credential learned: ${cap} from ${contract.unitId}`,
           );
           this.log(`Learned capability: ${cap} from ${contract.unitId}`);
         }
@@ -515,4 +513,4 @@ const result = await credential.issueCredential(
 // EXPORTS
 // ==========================================
 
-export default CredentialUnit;
+export default Credential;

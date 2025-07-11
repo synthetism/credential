@@ -1,7 +1,7 @@
 # Result Pattern Migration - Complete
 
 ## Overview
-Successfully migrated the CredentialUnit to use a robust, type-safe Result pattern for error handling, removing legacy error/stack/fail logic and ensuring all complex operations return Result<T> objects.
+Successfully migrated the Credential to use a robust, type-safe Result pattern for error handling, removing legacy error/stack/fail logic and ensuring all complex operations return Result<T> objects.
 
 ## Changes Made
 
@@ -67,7 +67,7 @@ The migration follows the established Synet error handling strategy:
 - **Teaching contracts** - Maintain backward compatibility
 
 ## Ready for 1.0.4 Release
-The CredentialUnit is now:
+The Credential is now:
 - ✅ **Dependency-free** - No external dependencies for Result pattern
 - ✅ **Type-safe** - All operations return proper Result<T> types
 - ✅ **Composable** - Can be easily combined with other units
@@ -78,9 +78,9 @@ The CredentialUnit is now:
 
 ### Basic Usage
 ```typescript
-import { CredentialUnit } from '@synet/credential';
+import { Credential } from '@synet/credential';
 
-const credential = CredentialUnit.create();
+const credential = Credential.create();
 credential.learn([key.teach()]); // Learn crypto capabilities
 
 const result = await credential.issueCredential(

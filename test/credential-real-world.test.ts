@@ -1,5 +1,5 @@
 /**
- * Real-world data tests for CredentialUnit using actual Veramo data
+ * Real-world data tests for Credential using actual Veramo data
  * 
  * These tests use real credential data from Veramo implementation to validate that:
  * 1. We can recreate signers from existing private keys
@@ -10,7 +10,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Signer, hexToPem } from '@synet/keys';
-import { CredentialUnit } from '../src/credential';
+import { Credential } from '../src/credential';
 import type { BaseCredentialSubject, W3CVerifiableCredential } from '../src/types-base';
 import * as crypto from 'node:crypto';
 
@@ -50,10 +50,10 @@ function hexPrivateKeyToPem(hexKey: string): string {
   }).toString();
 }
 
-describe('CredentialUnit Real-World Data Tests', () => {
+describe('Credential Real-World Data Tests', () => {
   let signer: Signer;
   let key: ReturnType<typeof signer.createKey>;
-  let credential: CredentialUnit;
+  let credential: Credential;
 
   // Extract data from the real-world example
   const testData = {
@@ -89,7 +89,7 @@ describe('CredentialUnit Real-World Data Tests', () => {
       throw new Error('Failed to create key from signer');
     }
     
-    credential = CredentialUnit.create();
+    credential = Credential.create();
     
     // Learn crypto capabilities
     credential.learn([key.teach()]);
@@ -258,7 +258,7 @@ describe('CredentialUnit Real-World Data Tests', () => {
         throw new Error('Failed to create wrong key');
       }
       
-      const wrongCredential = CredentialUnit.create();
+      const wrongCredential = Credential.create();
       wrongCredential.learn([wrongKey.teach()]);
 
       // Try to verify the existing credential with wrong key

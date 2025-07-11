@@ -1,16 +1,16 @@
 /**
- * Test for @synet/credential CredentialUnit
+ * Test for @synet/credential Credential
  * 
  * This demonstrates the integration pattern:
  * signer -> credential -> issue VC
  */
-import { CredentialUnit } from '../src/credential';
+import { Credential } from '../src/credential';
 
-async function testCredentialUnit() {
-  console.log('🎓 Testing @synet/credential CredentialUnit\n');
+async function testCredential() {
+  console.log('🎓 Testing @synet/credential Credential\n');
 
   // Create credential unit
-  const credential = new CredentialUnit();
+  const credential = Credential.create();
   console.log('✅ Created:', credential.whoami());
   console.log('✅ Initial capabilities:', credential.capabilities());
 
@@ -120,7 +120,7 @@ async function testCredentialUnit() {
 
   console.log('\n🎉 All tests completed!');
   console.log('\n💡 Integration Pattern Demonstrated:');
-  console.log('   1. Create CredentialUnit');
+  console.log('   1. Create Credential');
   console.log('   2. Learn crypto capabilities from Signer/Keys');
   console.log('   3. Issue W3C-compliant verifiable credentials');
   console.log('   4. Verify and validate credentials');
@@ -128,4 +128,4 @@ async function testCredentialUnit() {
 }
 
 // Run the test
-testCredentialUnit().catch(console.error);
+testCredential().catch(console.error);
