@@ -27,7 +27,14 @@
  * @author Synet Team
  */
 
-import { Unit, createUnitSchema, type TeachingContract } from "@synet/unit";
+import { 
+  Unit, 
+  createUnitSchema, 
+  type TeachingContract, 
+  type UnitProps, 
+  type UnitSchema 
+} from "@synet/unit";
+
 import { createId, base64urlDecode, base64urlEncode } from "./utils";
 import { Result, type VerificationResult } from "./result";
 import type {
@@ -44,39 +51,34 @@ const DEFAULT_CONTEXT = ["https://www.w3.org/2018/credentials/v1"];
 // CREDENTIAL IMPLEMENTATION
 // ==========================================
 
-export class Credential extends Unit {
-  private _audit: string[] = [];
-  private _log: string[] = [];
+export interface CredentialConfig {
+  metadata?: Record<string, unknown>;
+}
 
-  private constructor() {
-    super(
-      createUnitSchema({
+export interface CredentialProps extends UnitProps {
+  created: Date;
+  metadata: Record<string, unknown>;
+}
+
+export class Credential extends Unit<CredentialProps> {
+
+  private constructor(props: CredentialProps) {
+    super(props);
+  }
+  
+  static create(config: CredentialConfig = {}): Credential {
+    
+    const props: CredentialProps = {
+      dna: createUnitSchema({      
         id: "credential",
-        version: "1.0.0",
+        version: "1.0.0"
       }),
-    );
-  }
-
-  static create(): Credential {
-    // Initialize audit and log
-
-    return new Credential();
-  }
-
-  getAudit(): string[] {
-    return this._audit;
-  }
-
-  getLog(): string[] {
-    return this._log;
-  }
-
-  private log(msg: string): void {
-    this._log.push(msg);
-
-    if (this.can("logger.log")) {
-      this.execute("logger.log", { id: this.dna.id, message: msg });
-    }
+      created: new Date(),
+      metadata: config.metadata || {}
+    };
+    
+    return new Credential(props);
+   
   }
 
   whoami(): string {
@@ -498,8 +500,7 @@ const result = await credential.issueCredential(
           this._addCapability(cap, impl);
           console.debug(
             `📚 Credential learned: ${cap} from ${contract.unitId}`,
-          );
-          this.log(`Learned capability: ${cap} from ${contract.unitId}`);
+          );        
         }
       }
     }

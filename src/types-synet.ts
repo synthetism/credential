@@ -85,6 +85,11 @@ export interface IntelligenceAuthorizationSubject extends AuthorizationSubject {
   certifications?: string[];
 }
 
+
+export interface RootAuthorizationSubject extends AuthorizationSubject {
+  networkId: string;
+}
+
 export interface GatewayAuthorizationSubject extends AuthorizationSubject {
   networkId: string;
   regionId: string;
@@ -170,6 +175,7 @@ export const SynetCredentialType = {
   MarketIdentity: "MarketIdentityCredential",
 
   // Authorization types
+  RootAuthorization: "RootAuthorizationCredential",
   GatewayAuthorization: "GatewayAuthorizationCredential",
   IntelligenceAuthorization: "IntelligenceAuthorizationCredential",
 

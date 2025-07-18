@@ -73,7 +73,7 @@ export interface W3CVerifiableCredential<
   "@context": string[];
   id: string;
   type: string[];
-  issuer: { id: string };
+  issuer: Holder;
   issuanceDate: string;
   expirationDate?: string;
   credentialSubject: S;
@@ -94,7 +94,7 @@ export interface IdentitySubject extends BaseCredentialSubject {
 
 export interface AuthorizationSubject extends BaseCredentialSubject {
   authorizedBy: Holder; // Who authorized the entity
-  scope?: string;
+  scope?: string[];
   metadata?: Record<string, unknown>;
   schemaUri?: string;
   verifiableResource?: VerifiableResource;

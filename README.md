@@ -15,7 +15,7 @@
    | |____| | |  __/ (_| |  __/ | | | |_| | (_| | |
     \_____|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_|
                                            
-version: 1.0.0  
+version: 1.0.2  
 ```
 
 **Production-ready W3C Verifiable Credentials** built on battle-tested @synet/keys. Issue, verify, and manage credentials with zero dependencies and full TypeScript support.
