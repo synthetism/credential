@@ -1,7 +1,7 @@
 {
   "name": "@synet/credential",
-  "version": "1.0.3-dev.1",
-  "description": "VC Credentials for Synet Identity",
+  "version": "1.0.3",
+  "description": "VC Credentials - Simple, Robust, Unit-based Verifiable Credentials service",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "private": false,

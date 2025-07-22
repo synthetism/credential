@@ -15,8 +15,9 @@
    | |____| | |  __/ (_| |  __/ | | | |_| | (_| | |
     \_____|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_|
                                            
-version: 1.0.2  
+version: 1.0.3  
 ```
+
 
 **Production-ready W3C Verifiable Credentials** built on battle-tested @synet/keys. Issue, verify, and manage credentials with zero dependencies and full TypeScript support.
 
@@ -132,11 +133,12 @@ import { issueVC, verifyVC } from '@synet/credential';
 
 // University issuer setup
 const universityKeys = generateKeyPair('ed25519');
-const universitySigner = Signer.create(
-  universityKeys.privateKey,
-  universityKeys.publicKey,
-  'ed25519'
-);
+const universitySigner = Signer.create({
+  privateKeyPEM: universityKeys.privateKey,
+  publicKeyPEM: universityKeys.publicKey,
+  keyType: 'ed25519',
+  metadata: { institution: 'Tech University' }
+});
 const universityDid = createDIDKey(universityKeys.publicKey, 'ed25519');
 
 // Issue degree credential
@@ -165,11 +167,12 @@ console.log('🎓 Degree issued:', degreeCredential.data?.id);
 ```typescript
 // Employer issuer setup
 const employerKeys = generateKeyPair('ed25519');
-const employerSigner = Signer.create(
-  employerKeys.privateKey,
-  employerKeys.publicKey,
-  'ed25519'
-);
+const employerSigner = Signer.create({
+  privateKeyPEM: employerKeys.privateKey,
+  publicKeyPEM: employerKeys.publicKey,
+  keyType: 'ed25519',
+  metadata: { company: 'Tech Corp Inc.' }
+});
 const employerDid = createDIDKey(employerKeys.publicKey, 'ed25519');
 
 // Issue employment credential
@@ -208,7 +211,12 @@ const employmentVerification = await verifyVC(employerSigner, employmentCredenti
 
 // Third party (bank) verifies both credentials
 const bankKeys = generateKeyPair('ed25519');
-const bankSigner = Signer.create(bankKeys.privateKey, bankKeys.publicKey, 'ed25519');
+const bankSigner = Signer.create({
+  privateKeyPEM: bankKeys.privateKey,
+  publicKeyPEM: bankKeys.publicKey,
+  keyType: 'ed25519',
+  metadata: { institution: 'Verification Bank' }
+});
 
 // Bank can verify without being the issuer
 const bankVerifyDegree = await verifyVC(bankSigner, degreeCredential.data);
@@ -285,7 +293,7 @@ const expired = isExpired(credential);
 
 // Generate unique credential ID
 const credentialId = createCredentialId('IdentityCredential');
-```
+
 
 // 2. Create proper DID from the key
 const issuerDid = createDIDKey(keyPair.publicKey, 'Ed25519');
@@ -298,6 +306,8 @@ const issuerKey = Key.fromKeyPair('ed25519', keyPair.publicKey, keyPair.privateK
 // 4. Issue credential with proper DID
 const result = await issueVC(
   ## Credential (Advanced)
+
+```
 
 For complex systems, use the intelligent Credential that learns capabilities:
 
@@ -330,9 +340,13 @@ const credentialResult = await credential.issueCredential(
 ### Credential API
 
 ```typescript
+interface CredentialConfig {
+  metadata?: Record<string, unknown>;
+}
+
 class Credential {
   // Creation
-  static create(): Credential
+  static create(config?: CredentialConfig): Credential
   
   // Learning capabilities
   learn(capabilities: TeachingCapabilities[]): Promise<boolean>
@@ -505,7 +519,11 @@ describe('Credential Tests', () => {
 
   beforeEach(() => {
     const keyPair = generateKeyPair('ed25519');
-    signer = Signer.create(keyPair.privateKey, keyPair.publicKey, 'ed25519');
+    signer = Signer.create({
+      privateKeyPEM: keyPair.privateKey,
+      publicKeyPEM: keyPair.publicKey,
+      keyType: 'ed25519'
+    });
     issuerDid = `did:key:${keyPair.publicKey}`;
   });
 

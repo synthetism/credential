@@ -82,7 +82,7 @@ export class Credential extends Unit<CredentialProps> {
   }
 
   whoami(): string {
-    return `${this.dna.id}@${this.props.version} - W3C Verifiable Credential operations`;
+    return `${this.props.dna.id}@${this.props.dna.version} - W3C Verifiable Credential operations`;
   }
 
   capabilities(): string[] {
@@ -121,7 +121,7 @@ const result = await credential.issueCredential(
 
   teach(): TeachingContract {
     return {
-      unitId: this.dna.id,
+      unitId: this.props.dna.id,
       capabilities: {
         issueCredential: (...args: unknown[]) =>
           this.issueCredential(
@@ -498,9 +498,9 @@ const result = await credential.issueCredential(
         // Learn key capabilities that we need for credential operations
         if (cap === "getPublicKey" || cap === "sign" || cap === "verify") {
           this._addCapability(cap, impl);
-          console.debug(
-            `📚 Credential learned: ${cap} from ${contract.unitId}`,
-          );        
+          /* console.debug(
+            `Credential learned: ${cap} from ${contract.unitId}`,
+          );  */       
         }
       }
     }
