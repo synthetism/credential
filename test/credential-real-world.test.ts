@@ -74,9 +74,9 @@ describe('Credential Real-World Data Tests', () => {
     }
     
     // Create signer from existing private key material
-    const createdSigner = Signer.create(privateKeyPEM, publicKeyPEM, 'ed25519', {
+    const createdSigner = Signer.create({privateKeyPEM, publicKeyPEM, keyType:'ed25519', metadata:  {
       name: '0en-test-signer'
-    });
+    }});
     
     if (!createdSigner) {
       throw new Error('Failed to create signer from existing key material');
@@ -246,7 +246,7 @@ describe('Credential Real-World Data Tests', () => {
 
     it('should fail verification with wrong key material', async () => {
       // Create a different signer
-      const wrongSigner = Signer.generate('ed25519', { name: 'wrong-signer' });
+      const wrongSigner = Signer.generate('ed25519', { metadata: { name: 'wrong-signer' } });
       
       if (!wrongSigner) {
         throw new Error('Failed to create wrong signer');

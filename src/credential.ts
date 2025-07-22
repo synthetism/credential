@@ -66,7 +66,7 @@ export class Credential extends Unit<CredentialProps> {
     super(props);
   }
   
-  static create(config: CredentialConfig = {}): Credential {
+  static create(config?: CredentialConfig ): Credential {
     
     const props: CredentialProps = {
       dna: createUnitSchema({      
@@ -74,7 +74,7 @@ export class Credential extends Unit<CredentialProps> {
         version: "1.0.0"
       }),
       created: new Date(),
-      metadata: config.metadata || {}
+      metadata: config?.metadata || {}
     };
     
     return new Credential(props);
@@ -82,7 +82,7 @@ export class Credential extends Unit<CredentialProps> {
   }
 
   whoami(): string {
-    return `Credential@${this.dna.id} - W3C Verifiable Credential operations`;
+    return `${this.dna.id}@${this.props.version} - W3C Verifiable Credential operations`;
   }
 
   capabilities(): string[] {
