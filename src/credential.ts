@@ -47,6 +47,8 @@ import type {
 
 const DEFAULT_CONTEXT = ["https://www.w3.org/2018/credentials/v1"];
 
+const VERSION = '1.0.3';
+
 // ==========================================
 // CREDENTIAL IMPLEMENTATION
 // ==========================================
@@ -71,7 +73,7 @@ export class Credential extends Unit<CredentialProps> {
     const props: CredentialProps = {
       dna: createUnitSchema({      
         id: "credential",
-        version: "1.0.0"
+        version: VERSION
       }),
       created: new Date(),
       metadata: config?.metadata || {}
